@@ -1,0 +1,10 @@
+bin/
+build/
+*.o
+*.a
+*.so
+*.dylib
+*.pyc
+__pycache__/
+.DS_Store
+*.log
