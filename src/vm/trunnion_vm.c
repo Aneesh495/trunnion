@@ -15,16 +15,16 @@
 #include <time.h>
 #include <sys/time.h>
 
-/* Internal Opcode Constants for Threaded Code Execution */
-#define OP_EXIT        1
-#define OP_LIT         2
-#define OP_BRANCH      3
-#define OP_0BRANCH     4
-#define OP_DO          5
-#define OP_LOOP        6
-#define OP_PLOOP       7
-#define OP_STR_LIT     8
-#define OP_FLIT        9
+/* Internal Opcode Constants for Threaded Code Execution (Negative to avoid dictionary collision) */
+#define OP_EXIT        (-1)
+#define OP_LIT         (-2)
+#define OP_BRANCH      (-3)
+#define OP_0BRANCH     (-4)
+#define OP_DO          (-5)
+#define OP_LOOP        (-6)
+#define OP_PLOOP       (-7)
+#define OP_STR_LIT     (-8)
+#define OP_FLIT        (-9)
 
 /* Hardware Register Offsets */
 #define HW_REG_MAGIC        0x00
@@ -525,6 +525,14 @@ static void prim_2swap(trunnion_vm_t *vm) {
     trunnion_vm_push(vm, a);
     trunnion_vm_push(vm, b);
 }
+static void prim_2over(trunnion_vm_t *vm) {
+    if (vm->sp >= 4) {
+        cell_t a = vm->data_stack[vm->sp - 4];
+        cell_t b = vm->data_stack[vm->sp - 3];
+        trunnion_vm_push(vm, a);
+        trunnion_vm_push(vm, b);
+    }
+}
 static void prim_qdup(trunnion_vm_t *vm) { cell_t a = trunnion_vm_peek(vm); if (a != 0) trunnion_vm_push(vm, a); }
 static void prim_depth(trunnion_vm_t *vm) { trunnion_vm_push(vm, vm->sp); }
 static void prim_pick(trunnion_vm_t *vm) {
@@ -659,6 +667,9 @@ static void prim_store(trunnion_vm_t *vm) {
     cell_t val = trunnion_vm_pop(vm);
     if (addr >= 0 && addr + (cell_t)sizeof(cell_t) <= TRUNNION_VM_MEMORY_SIZE) {
         *(cell_t *)(vm->memory + addr) = val;
+        if (addr == 0) {
+            vm->base = (int)val;
+        }
     }
 }
 static void prim_cfetch(trunnion_vm_t *vm) {
@@ -905,6 +916,12 @@ static void prim_type(trunnion_vm_t *vm) {
 static void prim_hex(trunnion_vm_t *vm) { vm->base = 16; }
 static void prim_decimal(trunnion_vm_t *vm) { vm->base = 10; }
 static void prim_binary(trunnion_vm_t *vm) { vm->base = 2; }
+static void prim_base_addr(trunnion_vm_t *vm) {
+    /* Push pointer to base inside system memory */
+    cell_t base_addr = 0; /* Offset 0 in linear memory holds base */
+    *(cell_t *)(vm->memory + base_addr) = vm->base;
+    trunnion_vm_push(vm, base_addr);
+}
 static void prim_base_fetch(trunnion_vm_t *vm) { trunnion_vm_push(vm, vm->base); }
 static void prim_base_store(trunnion_vm_t *vm) { vm->base = (int)trunnion_vm_pop(vm); }
 static void prim_bye(trunnion_vm_t *vm) { vm->running = false; }
@@ -1051,6 +1068,7 @@ static void register_core_primitives(trunnion_vm_t *vm) {
     add_word(vm, "2DUP", FLAG_PRIMITIVE, prim_2dup, 0);
     add_word(vm, "2DROP", FLAG_PRIMITIVE, prim_2drop, 0);
     add_word(vm, "2SWAP", FLAG_PRIMITIVE, prim_2swap, 0);
+    add_word(vm, "2OVER", FLAG_PRIMITIVE, prim_2over, 0);
     add_word(vm, "?DUP", FLAG_PRIMITIVE, prim_qdup, 0);
     add_word(vm, "DEPTH", FLAG_PRIMITIVE, prim_depth, 0);
     add_word(vm, "PICK", FLAG_PRIMITIVE, prim_pick, 0);
@@ -1177,6 +1195,7 @@ static void register_core_primitives(trunnion_vm_t *vm) {
     add_word(vm, "HEX", FLAG_PRIMITIVE, prim_hex, 0);
     add_word(vm, "DECIMAL", FLAG_PRIMITIVE, prim_decimal, 0);
     add_word(vm, "BINARY", FLAG_PRIMITIVE, prim_binary, 0);
+    add_word(vm, "BASE", FLAG_PRIMITIVE, prim_base_addr, 0);
     add_word(vm, "BASE@", FLAG_PRIMITIVE, prim_base_fetch, 0);
     add_word(vm, "BASE!", FLAG_PRIMITIVE, prim_base_store, 0);
     add_word(vm, "BYE", FLAG_PRIMITIVE, prim_bye, 0);
@@ -1316,6 +1335,20 @@ bool trunnion_vm_eval_string(trunnion_vm_t *vm, const char *str) {
                         cell_t val = trunnion_vm_pop(vm);
                         *(cell_t *)(vm->memory + val_addr) = val;
                     }
+                }
+            }
+            continue;
+        }
+
+        /* CHAR / [CHAR] character literal */
+        if (strcmp(token, "[CHAR]") == 0 || strcmp(token, "CHAR") == 0) {
+            if (next_token(&cursor, token, sizeof(token))) {
+                cell_t ch = (uint8_t)token[0];
+                if (vm->compiling) {
+                    compile_cell(vm, OP_LIT);
+                    compile_cell(vm, ch);
+                } else {
+                    trunnion_vm_push(vm, ch);
                 }
             }
             continue;
