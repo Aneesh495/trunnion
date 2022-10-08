@@ -638,6 +638,7 @@ static void prim_xor(trunnion_vm_t *vm) { cell_t b = trunnion_vm_pop(vm); cell_t
 static void prim_invert(trunnion_vm_t *vm) { cell_t a = trunnion_vm_pop(vm); trunnion_vm_push(vm, ~a); }
 static void prim_lshift(trunnion_vm_t *vm) { cell_t u = trunnion_vm_pop(vm); cell_t x = trunnion_vm_pop(vm); trunnion_vm_push(vm, (cell_t)((ucell_t)x << u)); }
 static void prim_rshift(trunnion_vm_t *vm) { cell_t u = trunnion_vm_pop(vm); cell_t x = trunnion_vm_pop(vm); trunnion_vm_push(vm, (cell_t)((ucell_t)x >> u)); }
+static void prim_arshift(trunnion_vm_t *vm) { cell_t u = trunnion_vm_pop(vm); cell_t x = trunnion_vm_pop(vm); trunnion_vm_push(vm, x >> u); }
 
 /* Comparison */
 static void prim_eq(trunnion_vm_t *vm) { cell_t b = trunnion_vm_pop(vm); cell_t a = trunnion_vm_pop(vm); trunnion_vm_push(vm, a == b ? -1 : 0); }
@@ -650,6 +651,8 @@ static void prim_0eq(trunnion_vm_t *vm) { cell_t a = trunnion_vm_pop(vm); trunni
 static void prim_0neq(trunnion_vm_t *vm) { cell_t a = trunnion_vm_pop(vm); trunnion_vm_push(vm, a != 0 ? -1 : 0); }
 static void prim_0lt(trunnion_vm_t *vm) { cell_t a = trunnion_vm_pop(vm); trunnion_vm_push(vm, a < 0 ? -1 : 0); }
 static void prim_0gt(trunnion_vm_t *vm) { cell_t a = trunnion_vm_pop(vm); trunnion_vm_push(vm, a > 0 ? -1 : 0); }
+static void prim_0lte(trunnion_vm_t *vm) { cell_t a = trunnion_vm_pop(vm); trunnion_vm_push(vm, a <= 0 ? -1 : 0); }
+static void prim_0gte(trunnion_vm_t *vm) { cell_t a = trunnion_vm_pop(vm); trunnion_vm_push(vm, a >= 0 ? -1 : 0); }
 static void prim_ult(trunnion_vm_t *vm) { ucell_t b = (ucell_t)trunnion_vm_pop(vm); ucell_t a = (ucell_t)trunnion_vm_pop(vm); trunnion_vm_push(vm, a < b ? -1 : 0); }
 static void prim_ugt(trunnion_vm_t *vm) { ucell_t b = (ucell_t)trunnion_vm_pop(vm); ucell_t a = (ucell_t)trunnion_vm_pop(vm); trunnion_vm_push(vm, a > b ? -1 : 0); }
 
@@ -1108,6 +1111,7 @@ static void register_core_primitives(trunnion_vm_t *vm) {
     add_word(vm, "INVERT", FLAG_PRIMITIVE, prim_invert, 0);
     add_word(vm, "LSHIFT", FLAG_PRIMITIVE, prim_lshift, 0);
     add_word(vm, "RSHIFT", FLAG_PRIMITIVE, prim_rshift, 0);
+    add_word(vm, "ARSHIFT", FLAG_PRIMITIVE, prim_arshift, 0);
 
     /* Comparisons */
     add_word(vm, "=", FLAG_PRIMITIVE, prim_eq, 0);
@@ -1120,6 +1124,8 @@ static void register_core_primitives(trunnion_vm_t *vm) {
     add_word(vm, "0<>", FLAG_PRIMITIVE, prim_0neq, 0);
     add_word(vm, "0<", FLAG_PRIMITIVE, prim_0lt, 0);
     add_word(vm, "0>", FLAG_PRIMITIVE, prim_0gt, 0);
+    add_word(vm, "0<=", FLAG_PRIMITIVE, prim_0lte, 0);
+    add_word(vm, "0>=", FLAG_PRIMITIVE, prim_0gte, 0);
     add_word(vm, "U<", FLAG_PRIMITIVE, prim_ult, 0);
     add_word(vm, "U>", FLAG_PRIMITIVE, prim_ugt, 0);
 
@@ -1262,6 +1268,20 @@ bool trunnion_vm_eval_string(trunnion_vm_t *vm, const char *str) {
                 vm->here = (vm->here + (sizeof(cell_t) - 1)) & ~(sizeof(cell_t) - 1);
                 add_word(vm, token, 0, NULL, vm->here);
                 vm->compiling = true;
+            }
+            continue;
+        }
+
+        /* CREATE word */
+        if (strcmp(token, "CREATE") == 0) {
+            if (next_token(&cursor, token, sizeof(token))) {
+                vm->here = (vm->here + (sizeof(cell_t) - 1)) & ~(sizeof(cell_t) - 1);
+                cell_t data_addr = vm->here + 3 * sizeof(cell_t);
+                cell_t xt = vm->here;
+                compile_cell(vm, OP_LIT);
+                compile_cell(vm, data_addr);
+                compile_cell(vm, OP_EXIT);
+                add_word(vm, token, 0, NULL, xt);
             }
             continue;
         }
