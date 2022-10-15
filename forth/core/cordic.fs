@@ -234,5 +234,5 @@ VARIABLE CORDIC-I
 \ CORDIC-SQRT ( x_q32 -- sqrt_q32 )
 : CORDIC-SQRT ( x -- sqrt_x )
     DUP 0<= IF DROP 0 EXIT THEN
-    DUP S>F FSQRT F>S S>Q32
+    S>F FSQRT 65536.0 F* F>S
 ;

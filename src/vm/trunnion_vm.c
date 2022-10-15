@@ -790,6 +790,22 @@ static void prim_dplus(trunnion_vm_t *vm) {
     trunnion_vm_push(vm, (cell_t)res);
     trunnion_vm_push(vm, (cell_t)(res >> 64));
 }
+static void prim_q32_mul(trunnion_vm_t *vm) {
+    cell_t b = trunnion_vm_pop(vm);
+    cell_t a = trunnion_vm_pop(vm);
+    __int128 prod = (__int128)a * (__int128)b;
+    trunnion_vm_push(vm, (cell_t)(prod >> 32));
+}
+static void prim_q32_div(trunnion_vm_t *vm) {
+    cell_t b = trunnion_vm_pop(vm);
+    cell_t a = trunnion_vm_pop(vm);
+    if (b != 0) {
+        __int128 num = (__int128)a << 32;
+        trunnion_vm_push(vm, (cell_t)(num / b));
+    } else {
+        trunnion_vm_push(vm, 0);
+    }
+}
 static void prim_dminus(trunnion_vm_t *vm) {
     cell_t d2_hi = trunnion_vm_pop(vm); cell_t d2_lo = trunnion_vm_pop(vm);
     cell_t d1_hi = trunnion_vm_pop(vm); cell_t d1_lo = trunnion_vm_pop(vm);
@@ -1159,6 +1175,8 @@ static void register_core_primitives(trunnion_vm_t *vm) {
     add_word(vm, "DNEGATE", FLAG_PRIMITIVE, prim_dnegate, 0);
     add_word(vm, "M*", FLAG_PRIMITIVE, prim_mstar, 0);
     add_word(vm, "UM*", FLAG_PRIMITIVE, prim_umstar, 0);
+    add_word(vm, "Q32*", FLAG_PRIMITIVE, prim_q32_mul, 0);
+    add_word(vm, "Q32/", FLAG_PRIMITIVE, prim_q32_div, 0);
 
     /* Float */
     add_word(vm, "F+", FLAG_PRIMITIVE, prim_fadd, 0);

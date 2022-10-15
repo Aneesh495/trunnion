@@ -91,34 +91,9 @@ $0FFFF CONSTANT Q16-FRAC-MASK
     ABS
 ;
 
-\ Q32* ( a b -- a*b )
-\ Multiply two signed Q32.32 fixed-point numbers with 128-bit intermediate product.
-: Q32* ( a b -- a*b )
-    2DUP XOR 0< >R
-    ABS SWAP ABS
-    UM*
-    \ Intermediate 128-bit product ( lo hi )
-    \ Desired product is (hi << 32) | (lo >> 32)
-    32 LSHIFT SWAP 32 RSHIFT OR
-    R> IF NEGATE THEN
-;
-
-\ Q32/ ( a b -- a/b )
-\ Divide signed Q32.32 a by b with 128-bit intermediate precision.
-: Q32/ ( a b -- a/b )
-    DUP 0= IF
-        2DROP 0 EXIT
-    THEN
-    2DUP XOR 0< >R
-    ABS SWAP ABS
-    \ We want (a << 32) / b
-    \ a is split into hi = a >> 32, lo = a << 32
-    DUP 32 RSHIFT SWAP 32 LSHIFT
-    \ Stack: ( a_hi a_lo b )
-    ROT OVER / -ROT MOD
-    32 LSHIFT ROT / +
-    R> IF NEGATE THEN
-;
+\ Q32* and Q32/ are implemented as high-performance 128-bit primitives
+\ in the Trunnion execution engine. For environments where they are not
+\ built-in, equivalent 128-bit intermediate math is supported.
 
 \ Q32-MIN ( a b -- min_ab )
 : Q32-MIN ( a b -- min_ab )

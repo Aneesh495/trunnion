@@ -36,7 +36,7 @@ $FFFFFFFFFFFFFFFF CONSTANT MAX-UINT
 \ 3DUP ( a b c -- a b c a b c )
 \ Duplicate the top three stack cells.
 : 3DUP ( a b c -- a b c a b c )
-    DUP 2 PICK 2 PICK
+    2 PICK 2 PICK 2 PICK
 ;
 
 \ 3DROP ( a b c -- )
