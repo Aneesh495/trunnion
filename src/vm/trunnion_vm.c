@@ -566,6 +566,9 @@ static void prim_i(trunnion_vm_t *vm) {
 static void prim_j(trunnion_vm_t *vm) {
     if (vm->rp >= 3) trunnion_vm_push(vm, vm->return_stack[vm->rp - 3]);
 }
+static void prim_k(trunnion_vm_t *vm) {
+    if (vm->rp >= 5) trunnion_vm_push(vm, vm->return_stack[vm->rp - 5]);
+}
 static void prim_unloop(trunnion_vm_t *vm) {
     if (vm->rp >= 2) {
         trunnion_vm_rpop(vm);
@@ -1100,6 +1103,7 @@ static void register_core_primitives(trunnion_vm_t *vm) {
     add_word(vm, "2R>", FLAG_PRIMITIVE, prim_2r_from, 0);
     add_word(vm, "I", FLAG_PRIMITIVE, prim_i, 0);
     add_word(vm, "J", FLAG_PRIMITIVE, prim_j, 0);
+    add_word(vm, "K", FLAG_PRIMITIVE, prim_k, 0);
     add_word(vm, "UNLOOP", FLAG_PRIMITIVE, prim_unloop, 0);
 
     /* Arithmetic / Bitwise */
