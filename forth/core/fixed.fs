@@ -94,6 +94,20 @@ $0FFFF CONSTANT Q16-FRAC-MASK
 \ Q32* and Q32/ are implemented as high-performance 128-bit primitives
 \ in the Trunnion execution engine. For environments where they are not
 \ built-in, equivalent 128-bit intermediate math is supported.
+[UNDEFINED] Q32* [IF]
+: Q32* ( a b -- prod )
+    M* SWAP $FFFFFFFF00000000 AND 32 RSHIFT SWAP 32 LSHIFT OR
+;
+[THEN]
+
+[UNDEFINED] Q32/ [IF]
+: Q32-ASR32 ( n -- n_shifted )
+    32 0 DO 2/ LOOP
+;
+: Q32/ ( a b -- quot )
+    >R DUP 32 LSHIFT SWAP Q32-ASR32 R> SM/REM NIP
+;
+[THEN]
 
 \ Q32-MIN ( a b -- min_ab )
 : Q32-MIN ( a b -- min_ab )

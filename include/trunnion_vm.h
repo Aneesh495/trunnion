@@ -72,6 +72,7 @@ typedef struct trunnion_vm {
     bool running;
     int base;
     char pad[TRUNNION_VM_PAD_SIZE];
+    int cond_skip_depth;
 
     /* Control Flow Stack for Compiling Control Structures */
     cell_t cs_stack[64];

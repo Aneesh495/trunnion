@@ -103,6 +103,14 @@ $FFFFFFFFFFFFFFFF CONSTANT MAX-UINT
     1 SWAP LSHIFT 1-
 ;
 
+\ ARSHIFT ( n1 u -- n2 )
+\ Arithmetic right shift by u bit positions preserving sign bit.
+[UNDEFINED] ARSHIFT [IF]
+: ARSHIFT ( n1 u -- n2 )
+    0 ?DO 2/ LOOP
+;
+[THEN]
+
 \ EXTRACT-FIELD ( val shift width -- field )
 \ Extract bitfield of given width after shifting right by shift.
 : EXTRACT-FIELD ( val shift width -- field )

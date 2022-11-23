@@ -105,6 +105,7 @@ void trunnion_vm_reset(trunnion_vm_t *vm) {
     vm->cs_sp = 0;
     vm->compiling = false;
     vm->running = true;
+    vm->cond_skip_depth = 0;
 }
 
 void trunnion_vm_push(trunnion_vm_t *vm, cell_t val) {
@@ -1283,6 +1284,54 @@ bool trunnion_vm_eval_string(trunnion_vm_t *vm, const char *str) {
             continue;
         }
 
+        /* Conditional compilation skip mode */
+        if (vm->cond_skip_depth > 0) {
+            if (strcmp(token, "[IF]") == 0) {
+                vm->cond_skip_depth++;
+            } else if (strcmp(token, "[THEN]") == 0) {
+                vm->cond_skip_depth--;
+            } else if (strcmp(token, "[ELSE]") == 0 && vm->cond_skip_depth == 1) {
+                vm->cond_skip_depth = 0;
+            }
+            continue;
+        }
+
+        /* [DEFINED] name */
+        if (strcmp(token, "[DEFINED]") == 0) {
+            if (next_token(&cursor, token, sizeof(token))) {
+                trunnion_vm_push(vm, find_word(vm, token) >= 0 ? -1 : 0);
+            }
+            continue;
+        }
+
+        /* [UNDEFINED] name */
+        if (strcmp(token, "[UNDEFINED]") == 0) {
+            if (next_token(&cursor, token, sizeof(token))) {
+                trunnion_vm_push(vm, find_word(vm, token) < 0 ? -1 : 0);
+            }
+            continue;
+        }
+
+        /* [IF] */
+        if (strcmp(token, "[IF]") == 0) {
+            cell_t flag = trunnion_vm_pop(vm);
+            if (!flag) {
+                vm->cond_skip_depth = 1;
+            }
+            continue;
+        }
+
+        /* [ELSE] */
+        if (strcmp(token, "[ELSE]") == 0) {
+            vm->cond_skip_depth = 1;
+            continue;
+        }
+
+        /* [THEN] */
+        if (strcmp(token, "[THEN]") == 0) {
+            continue;
+        }
+
         /* Colon definition */
         if (strcmp(token, ":") == 0) {
             if (next_token(&cursor, token, sizeof(token))) {
@@ -1440,6 +1489,18 @@ bool trunnion_vm_eval_string(trunnion_vm_t *vm, const char *str) {
                 for (size_t i = 0; i < str_len; i++) putchar(str_start[i]);
                 fflush(stdout);
             }
+            continue;
+        }
+
+        /* .( Print String Literal in Immediate / Interpretation Mode */
+        if (strcmp(token, ".(") == 0) {
+            while (*cursor && isspace((unsigned char)*cursor)) cursor++;
+            const char *str_start = cursor;
+            while (*cursor && *cursor != ')') cursor++;
+            size_t str_len = cursor - str_start;
+            if (*cursor == ')') cursor++;
+            for (size_t i = 0; i < str_len; i++) putchar(str_start[i]);
+            fflush(stdout);
             continue;
         }
 

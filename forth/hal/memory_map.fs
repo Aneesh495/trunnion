@@ -9,8 +9,25 @@
 \ ==============================================================================
 
 \ ------------------------------------------------------------------------------
-\ Section 1: Subsystem Base Offsets
+\ Section 1: Subsystem Base Offsets and Portability Stubs
 \ ------------------------------------------------------------------------------
+
+[UNDEFINED] HW@ [IF]
+\ Simulated memory-mapped hardware array for host Forth environments (e.g. Gforth)
+CREATE SIM-HW-REGS 4096 CELLS ALLOT
+: HW@ ( reg_offset -- val )
+    CELLS SIM-HW-REGS + @
+;
+: HW! ( val reg_offset -- )
+    CELLS SIM-HW-REGS + !
+;
+: HW-STEP ( dt_us -- )
+    DROP
+;
+: HW-CLOCK ( -- time_lo time_hi )
+    0 0
+;
+[THEN]
 
 $0000 CONSTANT SYS-REG-BASE     \ System management and clock
 $0100 CONSTANT CPA-REG-BASE     \ Coarse Pointing Assembly (gimbal motors & encoders)
