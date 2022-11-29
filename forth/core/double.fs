@@ -147,6 +147,12 @@
     S>D D+
 ;
 
+\ D/ ( d1 d2 -- d_quot )
+\ Double cell signed division via SM/REM.
+: D/ ( d1_lo d1_hi d2_lo d2_hi -- quot_lo quot_hi )
+    DROP SM/REM NIP S>D
+;
+
 \ ------------------------------------------------------------------------------
 \ Section 4: Double Formatting and Printing
 \ ------------------------------------------------------------------------------

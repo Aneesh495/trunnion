@@ -103,3 +103,15 @@
     0 REG-FSM-OFFLOAD-X HW!
     0 REG-FSM-OFFLOAD-Y HW!
 ;
+
+\ FSM-SET-COMMAND ( tip_nrad tilt_nrad -- )
+: FSM-SET-COMMAND ( tip tilt -- )
+    FSM-TILT-CMD!
+    FSM-TIP-CMD!
+;
+
+\ FSM-GET-DEFLECTION ( -- tip_urad tilt_urad )
+: FSM-GET-DEFLECTION ( -- tip tilt )
+    FSM-TIP-FB@ 1000 /
+    FSM-TILT-FB@ 1000 /
+;

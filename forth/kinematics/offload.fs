@@ -18,6 +18,9 @@
 
 VARIABLE OFFLOAD-ACC-TIP     \ Low-pass filtered tip angle (nanoradians Q32.32)
 VARIABLE OFFLOAD-ACC-TILT    \ Low-pass filtered tilt angle (nanoradians Q32.32)
+VARIABLE OFFLOAD-AZ-RATE
+VARIABLE OFFLOAD-EL-RATE
+VARIABLE OFFLOAD-TRIGGERED
 
 \ ------------------------------------------------------------------------------
 \ Section 1: Initialization
@@ -27,7 +30,15 @@ VARIABLE OFFLOAD-ACC-TILT    \ Low-pass filtered tilt angle (nanoradians Q32.32)
 : OFFLOAD-INIT ( -- )
     0 OFFLOAD-ACC-TIP !
     0 OFFLOAD-ACC-TILT !
+    0 OFFLOAD-AZ-RATE !
+    0 OFFLOAD-EL-RATE !
+    0 OFFLOAD-TRIGGERED !
     FSM-OFFLOAD-RESET
+;
+
+\ OFFLOAD-ACTIVE? ( -- flag )
+: OFFLOAD-ACTIVE? ( -- flag )
+    OFFLOAD-TRIGGERED @
 ;
 
 \ ------------------------------------------------------------------------------

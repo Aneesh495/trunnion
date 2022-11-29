@@ -126,3 +126,24 @@
     DUP CPA-EL-MIN-RAD >= SWAP CPA-EL-MAX-RAD <= AND
     SWAP DUP Q32-PI NEGATE >= SWAP Q32-PI <= AND AND
 ;
+
+\ CPA-SET-CMD-RATE ( az_mA el_mA -- )
+: CPA-SET-CMD-RATE ( az el -- )
+    CPA-EL-CMD-RATE!
+    CPA-AZ-CMD-RATE!
+;
+
+\ CPA-SERVO-ENABLE ( -- )
+: CPA-SERVO-ENABLE ( -- )
+    CPA-ENABLE
+;
+
+\ CPA-SERVO-DISABLE ( -- )
+: CPA-SERVO-DISABLE ( -- )
+    CPA-DISABLE
+;
+
+\ CPA-READ-ENCODERS ( -- az_rad_q32 el_rad_q32 )
+: CPA-READ-ENCODERS ( -- az el )
+    CPA-AZ-ANGLE@ CPA-EL-ANGLE@
+;

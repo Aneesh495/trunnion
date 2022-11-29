@@ -143,6 +143,21 @@ $FFFFFFFFFFFFFFFF CONSTANT MAX-UINT
     0< IF -1 ELSE 1 THEN
 ;
 
+\ INT-SQRT ( u -- sqrt )
+\ Integer square root via integer Newton-Raphson.
+: INT-SQRT ( u -- sqrt )
+    DUP 0<= IF DROP 0 EXIT THEN
+    DUP 1 = IF EXIT THEN
+    DUP 2/
+    BEGIN
+        2DUP / OVER + 2/
+        2DUP >
+    WHILE
+        NIP
+    REPEAT
+    DROP
+;
+
 \ WITHIN? ( val min_val max_val -- flag )
 \ Check if min_val <= val <= max_val (inclusive).
 : WITHIN? ( val min_val max_val -- flag )

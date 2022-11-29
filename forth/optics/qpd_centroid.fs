@@ -132,3 +132,38 @@ VARIABLE QPD-DELTA-SQ
     120 S>Q32
     NIP \ Approximate optical waist
 ;
+
+\ ------------------------------------------------------------------------------
+\ Section 4: Cached State and Sampling API
+\ ------------------------------------------------------------------------------
+
+VARIABLE QPD-LAST-ANG-X
+VARIABLE QPD-LAST-ANG-Y
+VARIABLE QPD-LAST-VALID
+
+\ QPD-CENTROID-INIT ( -- )
+: QPD-CENTROID-INIT ( -- )
+    0 QPD-LAST-ANG-X !
+    0 QPD-LAST-ANG-Y !
+    0 QPD-LAST-VALID !
+;
+
+\ QPD-SAMPLE ( -- )
+\ Sample quadrant photodiode ADC channels and compute centroid angles.
+: QPD-SAMPLE ( -- )
+    QPD-READ-ALL QPD-CENTROID-ANGLES
+    QPD-LAST-VALID !
+    QPD-LAST-ANG-Y !
+    QPD-LAST-ANG-X !
+;
+
+\ QPD-SIGNAL-VALID? ( -- flag )
+: QPD-SIGNAL-VALID? ( -- flag )
+    QPD-LAST-VALID @
+;
+
+\ QPD-GET-CENTROID ( -- ang_x_q32 ang_y_q32 )
+: QPD-GET-CENTROID ( -- x y )
+    QPD-LAST-ANG-X @
+    QPD-LAST-ANG-Y @
+;

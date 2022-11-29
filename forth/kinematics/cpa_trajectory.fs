@@ -79,6 +79,12 @@ VARIABLE TRAJ-DIRECTION
     TRUE TRAJ-ACTIVE !
 ;
 
+\ CPA-TRAJ-PLAN-DEFAULT ( start_pos target_pos -- )
+\ Plan S-curve trajectory using default payload velocity, acceleration, and jerk limits.
+: CPA-TRAJ-PLAN-DEFAULT ( start target -- )
+    CPA-DEFAULT-VMAX CPA-DEFAULT-AMAX CPA-DEFAULT-JMAX CPA-TRAJ-PLAN
+;
+
 \ ------------------------------------------------------------------------------
 \ Section 2: Real-Time Trajectory Stepping Engine
 \ ------------------------------------------------------------------------------
@@ -143,4 +149,10 @@ VARIABLE TRAJ-SMOOTH-S
     TRAJ-POS-CURRENT @
     TRAJ-VEL-CURRENT @
     FALSE
+;
+
+\ CPA-TRAJ-COMPLETED? ( -- flag )
+\ Return TRUE if the current trajectory profile has reached its target position.
+: CPA-TRAJ-COMPLETED? ( -- flag )
+    TRAJ-ACTIVE @ 0=
 ;
