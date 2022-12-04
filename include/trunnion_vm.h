@@ -77,6 +77,10 @@ typedef struct trunnion_vm {
     /* Control Flow Stack for Compiling Control Structures */
     cell_t cs_stack[64];
     int cs_sp;
+    cell_t case_stack[32];
+    int case_sp;
+    cell_t case_exits[128];
+    int case_exit_sp;
 
     /* Hardware Simulation Space */
     uint32_t hw_regs[TRUNNION_VM_HW_REGS_SIZE];

@@ -103,6 +103,8 @@ void trunnion_vm_reset(trunnion_vm_t *vm) {
     vm->rp = 0;
     vm->fp = 0;
     vm->cs_sp = 0;
+    vm->case_sp = 0;
+    vm->case_exit_sp = 0;
     vm->compiling = false;
     vm->running = true;
     vm->cond_skip_depth = 0;
@@ -612,6 +614,36 @@ static void prim_star_slash(trunnion_vm_t *vm) {
         trunnion_vm_push(vm, 0);
     }
 }
+static void prim_sm_rem(trunnion_vm_t *vm) {
+    cell_t n1 = trunnion_vm_pop(vm);
+    cell_t d1_hi = trunnion_vm_pop(vm);
+    cell_t d1_lo = trunnion_vm_pop(vm);
+    if (n1 == 0) {
+        trunnion_vm_push(vm, 0);
+        trunnion_vm_push(vm, 0);
+        return;
+    }
+    __int128 d1 = ((__int128)d1_hi << 64) | (uint64_t)d1_lo;
+    __int128 quot = d1 / n1;
+    __int128 rem = d1 % n1;
+    trunnion_vm_push(vm, (cell_t)rem);
+    trunnion_vm_push(vm, (cell_t)quot);
+}
+static void prim_um_mod(trunnion_vm_t *vm) {
+    uint64_t u1 = (uint64_t)trunnion_vm_pop(vm);
+    uint64_t ud1_hi = (uint64_t)trunnion_vm_pop(vm);
+    uint64_t ud1_lo = (uint64_t)trunnion_vm_pop(vm);
+    if (u1 == 0) {
+        trunnion_vm_push(vm, 0);
+        trunnion_vm_push(vm, 0);
+        return;
+    }
+    unsigned __int128 ud1 = ((unsigned __int128)ud1_hi << 64) | ud1_lo;
+    unsigned __int128 quot = ud1 / u1;
+    unsigned __int128 rem = ud1 % u1;
+    trunnion_vm_push(vm, (cell_t)rem);
+    trunnion_vm_push(vm, (cell_t)quot);
+}
 static void prim_star_slash_mod(trunnion_vm_t *vm) {
     cell_t c = trunnion_vm_pop(vm);
     cell_t b = trunnion_vm_pop(vm);
@@ -1077,6 +1109,42 @@ static void prim_exit(trunnion_vm_t *vm) {
     }
 }
 
+static void prim_case(trunnion_vm_t *vm) {
+    if (vm->case_sp < 32) {
+        vm->case_stack[vm->case_sp++] = vm->case_exit_sp;
+    }
+}
+
+static void prim_of(trunnion_vm_t *vm) {
+    compile_cell(vm, find_word(vm, "OVER"));
+    compile_cell(vm, find_word(vm, "="));
+    compile_cell(vm, OP_0BRANCH);
+    vm->cs_stack[vm->cs_sp++] = vm->here;
+    compile_cell(vm, 0);
+    compile_cell(vm, find_word(vm, "DROP"));
+}
+
+static void prim_endof(trunnion_vm_t *vm) {
+    compile_cell(vm, OP_BRANCH);
+    if (vm->case_exit_sp < 128) {
+        vm->case_exits[vm->case_exit_sp++] = vm->here;
+    }
+    compile_cell(vm, 0);
+    cell_t false_orig = vm->cs_stack[--vm->cs_sp];
+    *(cell_t *)(vm->memory + false_orig) = vm->here - false_orig;
+}
+
+static void prim_endcase(trunnion_vm_t *vm) {
+    compile_cell(vm, find_word(vm, "DROP"));
+    if (vm->case_sp > 0) {
+        int start_exit = (int)vm->case_stack[--vm->case_sp];
+        while (vm->case_exit_sp > start_exit) {
+            cell_t exit_orig = vm->case_exits[--vm->case_exit_sp];
+            *(cell_t *)(vm->memory + exit_orig) = vm->here - exit_orig;
+        }
+    }
+}
+
 /* Register Core Primitives */
 static void register_core_primitives(trunnion_vm_t *vm) {
     /* Stack */
@@ -1116,6 +1184,9 @@ static void register_core_primitives(trunnion_vm_t *vm) {
     add_word(vm, "/MOD", FLAG_PRIMITIVE, prim_divmod, 0);
     add_word(vm, "*/", FLAG_PRIMITIVE, prim_star_slash, 0);
     add_word(vm, "*/MOD", FLAG_PRIMITIVE, prim_star_slash_mod, 0);
+    add_word(vm, "M*", FLAG_PRIMITIVE, prim_mstar, 0);
+    add_word(vm, "SM/REM", FLAG_PRIMITIVE, prim_sm_rem, 0);
+    add_word(vm, "UM/MOD", FLAG_PRIMITIVE, prim_um_mod, 0);
     add_word(vm, "1+", FLAG_PRIMITIVE, prim_1plus, 0);
     add_word(vm, "1-", FLAG_PRIMITIVE, prim_1minus, 0);
     add_word(vm, "2+", FLAG_PRIMITIVE, prim_2plus, 0);
@@ -1256,6 +1327,10 @@ static void register_core_primitives(trunnion_vm_t *vm) {
     add_word(vm, "+LOOP", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_plus_loop, 0);
     add_word(vm, "RECURSE", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_recurse, 0);
     add_word(vm, "EXIT", FLAG_PRIMITIVE, prim_exit, 0);
+    add_word(vm, "CASE", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_case, 0);
+    add_word(vm, "OF", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_of, 0);
+    add_word(vm, "ENDOF", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_endof, 0);
+    add_word(vm, "ENDCASE", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_endcase, 0);
 }
 
 /* Evaluator */
