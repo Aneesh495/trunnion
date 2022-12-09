@@ -199,6 +199,8 @@ VARIABLE CORDIC-I
     CORDIC-Z @
 ;
 
+VARIABLE CORDIC-ATAN-Y-NEG
+
 \ CORDIC-ATAN2 ( y_q32 x_q32 -- angle_q32 )
 \ Compute 4-quadrant arctangent atan2(y, x) in Q32.32 radians.
 : CORDIC-ATAN2 ( y x -- angle )
@@ -209,14 +211,15 @@ VARIABLE CORDIC-I
         DROP 0 EXIT
     THEN
 
-    \ Check for negative x (quadrants 2 and 3)
+    \ Stack: ( y x )
     DUP 0< IF
-        NEGATE SWAP NEGATE SWAP
-        0 CORDIC-VECTOR-CORE
+        NEGATE SWAP
+        DUP 0< CORDIC-ATAN-Y-NEG !
+        NEGATE SWAP 0 CORDIC-VECTOR-CORE
         NIP NIP
-        SWAP 0< IF Q32-PI - ELSE Q32-PI + THEN
+        CORDIC-ATAN-Y-NEG @ IF Q32-PI - ELSE Q32-PI + THEN
     ELSE
-        0 CORDIC-VECTOR-CORE
+        SWAP 0 CORDIC-VECTOR-CORE
         NIP NIP
     THEN
 ;
@@ -234,5 +237,5 @@ VARIABLE CORDIC-I
 \ CORDIC-SQRT ( x_q32 -- sqrt_q32 )
 : CORDIC-SQRT ( x -- sqrt_x )
     DUP 0<= IF DROP 0 EXIT THEN
-    S>F FSQRT 65536.0 F* F>S
+    S>F FSQRT 65536.0e0 F* F>S
 ;

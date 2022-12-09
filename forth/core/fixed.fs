@@ -54,16 +54,16 @@ $0FFFF CONSTANT Q16-FRAC-MASK
 \ Q32>S ( q32 -- n )
 \ Convert Q32.32 fixed-point to truncated integer.
 : Q32>S ( q32 -- n )
-    Q32-SHIFT RSHIFT
+    Q32-SHIFT ARSHIFT
 ;
 
 \ Q32-ROUND ( q32 -- n )
 \ Convert Q32.32 fixed-point to rounded integer.
 : Q32-ROUND ( q32 -- n )
     DUP 0< IF
-        $80000000 - Q32-SHIFT RSHIFT
+        $80000000 - Q32-SHIFT ARSHIFT
     ELSE
-        $80000000 + Q32-SHIFT RSHIFT
+        $80000000 + Q32-SHIFT ARSHIFT
     THEN
 ;
 

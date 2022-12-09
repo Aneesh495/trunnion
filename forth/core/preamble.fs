@@ -57,6 +57,21 @@ $FFFFFFFFFFFFFFFF CONSTANT MAX-UINT
     2DROP 2DROP
 ;
 
+\ 6DUP ( a b c d e f -- a b c d e f a b c d e f )
+: 6DUP ( a b c d e f -- a b c d e f a b c d e f )
+    5 PICK 5 PICK 5 PICK 5 PICK 5 PICK 5 PICK
+;
+
+\ 6DROP ( a b c d e f -- )
+: 6DROP ( a b c d e f -- )
+    2DROP 2DROP 2DROP
+;
+
+\ 7DROP ( a b c d e f g -- )
+: 7DROP ( a b c d e f g -- )
+    DROP 6DROP
+;
+
 \ UNDER+ ( a b c -- a+c b )
 \ Add top cell to the cell beneath the second stack element.
 : UNDER+ ( a b c -- a+c b )
