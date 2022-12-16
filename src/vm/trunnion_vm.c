@@ -563,6 +563,12 @@ static void prim_2r_from(trunnion_vm_t *vm) {
     trunnion_vm_push(vm, a);
     trunnion_vm_push(vm, b);
 }
+static void prim_2r_fetch(trunnion_vm_t *vm) {
+    if (vm->rp >= 2) {
+        trunnion_vm_push(vm, vm->return_stack[vm->rp - 2]);
+        trunnion_vm_push(vm, vm->return_stack[vm->rp - 1]);
+    }
+}
 static void prim_i(trunnion_vm_t *vm) {
     if (vm->rp > 0) trunnion_vm_push(vm, vm->return_stack[vm->rp - 1]);
 }
@@ -790,6 +796,16 @@ static void prim_erase(trunnion_vm_t *vm) {
     cell_t addr = trunnion_vm_pop(vm);
     if (u > 0 && addr >= 0 && addr + u <= TRUNNION_VM_MEMORY_SIZE) {
         memset(vm->memory + addr, 0, u);
+    }
+}
+static void prim_cmove(trunnion_vm_t *vm) {
+    cell_t u = trunnion_vm_pop(vm);
+    cell_t dst = trunnion_vm_pop(vm);
+    cell_t src = trunnion_vm_pop(vm);
+    if (u > 0) {
+        uint8_t *src_ptr = (src >= 0 && src < TRUNNION_VM_MEMORY_SIZE) ? vm->memory + src : (uint8_t *)(uintptr_t)src;
+        uint8_t *dst_ptr = (dst >= 0 && dst < TRUNNION_VM_MEMORY_SIZE) ? vm->memory + dst : (uint8_t *)(uintptr_t)dst;
+        memmove(dst_ptr, src_ptr, (size_t)u);
     }
 }
 
@@ -1170,6 +1186,7 @@ static void register_core_primitives(trunnion_vm_t *vm) {
     add_word(vm, "R@", FLAG_PRIMITIVE, prim_r_fetch, 0);
     add_word(vm, "2>R", FLAG_PRIMITIVE, prim_2to_r, 0);
     add_word(vm, "2R>", FLAG_PRIMITIVE, prim_2r_from, 0);
+    add_word(vm, "2R@", FLAG_PRIMITIVE, prim_2r_fetch, 0);
     add_word(vm, "I", FLAG_PRIMITIVE, prim_i, 0);
     add_word(vm, "J", FLAG_PRIMITIVE, prim_j, 0);
     add_word(vm, "K", FLAG_PRIMITIVE, prim_k, 0);
@@ -1232,6 +1249,7 @@ static void register_core_primitives(trunnion_vm_t *vm) {
     add_word(vm, "2!", FLAG_PRIMITIVE, prim_2store, 0);
     add_word(vm, "+!", FLAG_PRIMITIVE, prim_plus_store, 0);
     add_word(vm, "MOVE", FLAG_PRIMITIVE, prim_move, 0);
+    add_word(vm, "CMOVE", FLAG_PRIMITIVE, prim_cmove, 0);
     add_word(vm, "FILL", FLAG_PRIMITIVE, prim_fill, 0);
     add_word(vm, "ERASE", FLAG_PRIMITIVE, prim_erase, 0);
 
