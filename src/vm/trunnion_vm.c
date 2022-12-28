@@ -1125,6 +1125,11 @@ static void prim_exit(trunnion_vm_t *vm) {
     }
 }
 
+static void prim_execute(trunnion_vm_t *vm) {
+    cell_t xt = trunnion_vm_pop(vm);
+    execute_xt(vm, xt);
+}
+
 static void prim_case(trunnion_vm_t *vm) {
     if (vm->case_sp < 32) {
         vm->case_stack[vm->case_sp++] = vm->case_exit_sp;
@@ -1341,10 +1346,12 @@ static void register_core_primitives(trunnion_vm_t *vm) {
     add_word(vm, "WHILE", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_while, 0);
     add_word(vm, "REPEAT", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_repeat, 0);
     add_word(vm, "DO", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_do, 0);
+    add_word(vm, "?DO", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_do, 0);
     add_word(vm, "LOOP", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_loop, 0);
     add_word(vm, "+LOOP", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_plus_loop, 0);
     add_word(vm, "RECURSE", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_recurse, 0);
     add_word(vm, "EXIT", FLAG_PRIMITIVE, prim_exit, 0);
+    add_word(vm, "EXECUTE", FLAG_PRIMITIVE, prim_execute, 0);
     add_word(vm, "CASE", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_case, 0);
     add_word(vm, "OF", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_of, 0);
     add_word(vm, "ENDOF", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_endof, 0);
@@ -1533,6 +1540,24 @@ bool trunnion_vm_eval_string(trunnion_vm_t *vm, const char *str) {
                     compile_cell(vm, ch);
                 } else {
                     trunnion_vm_push(vm, ch);
+                }
+            }
+            continue;
+        }
+
+        /* Tick ' and ['] */
+        if (strcmp(token, "'") == 0 || strcmp(token, "[']") == 0) {
+            if (next_token(&cursor, token, sizeof(token))) {
+                int idx = find_word(vm, token);
+                if (idx >= 0) {
+                    if (vm->compiling) {
+                        compile_cell(vm, OP_LIT);
+                        compile_cell(vm, (cell_t)idx);
+                    } else {
+                        trunnion_vm_push(vm, (cell_t)idx);
+                    }
+                } else {
+                    fprintf(stderr, "[ERROR] Tick could not find word '%s'\n", token);
                 }
             }
             continue;
