@@ -58,21 +58,17 @@ VARIABLE KERNEL-SCHED-TICKS
         2DROP -1 EXIT
     THEN
 
-    KERNEL-NUM-TASKS @ DUP >R TCB-ADDR >R
-    \ Set period
-    R@ 3 CELLS + !
-    \ Set execution XT
-    R@ 2 CELLS + !
-    \ Set state READY
+    KERNEL-NUM-TASKS @ DUP TCB-ADDR
+    >R
+    DUP R@ 0 CELLS + !
     TASK-STATE-READY R@ 1 CELLS + !
-    \ Set ID
-    R@ 0 CELLS + !
-    \ Clear elapsed ticks and count
+    ROT R@ 2 CELLS + !
+    SWAP R@ 3 CELLS + !
     0 R@ 4 CELLS + !
-    0 R> 5 CELLS + !
+    0 R@ 5 CELLS + !
+    R> DROP
 
     1 KERNEL-NUM-TASKS +!
-    R>
 ;
 
 \ ------------------------------------------------------------------------------
