@@ -179,16 +179,18 @@ VARIABLE Q-CROSS1-X  VARIABLE Q-CROSS1-Y  VARIABLE Q-CROSS1-Z
 \ Section 5: Axis-Angle and DCM Conversions
 \ ------------------------------------------------------------------------------
 
+VARIABLE Q-AXIS-COS
+
 \ Q-AXIS-ANGLE ( ux uy uz angle_rad -- qw qx qy qz )
 \ Construct unit quaternion from normalized axis (ux, uy, uz) and rotation angle.
 : Q-AXIS-ANGLE ( ux uy uz angle -- qw qx qy qz )
     2/ \ angle / 2
     CORDIC-SIN-COS \ Stack: ( ux uy uz sin(theta/2) cos(theta/2) )
-    >R >R \ R: cos sin
-    R@ V3*SCALE \ Scale (ux, uy, uz) by sin(theta/2)
-    R> DROP \ Drop sin
-    R> -ROT \ Bring cos(theta/2) to bottom of quaternion: ( qw qx qy qz )
-    ROT SWAP
+    Q-AXIS-COS !
+    V3*SCALE \ Scale (ux, uy, uz) by sin(theta/2) -> ( qx qy qz )
+    >R >R >R
+    Q-AXIS-COS @
+    R> R> R>
 ;
 
 \ Q>DCM ( qw qx qy qz m_out -- )
@@ -242,6 +244,8 @@ VARIABLE Q-CROSS1-X  VARIABLE Q-CROSS1-Y  VARIABLE Q-CROSS1-Z
 
 VARIABLE Q-SLERP-DOT
 VARIABLE Q-SLERP-T
+VARIABLE Q-SLERP-S1
+VARIABLE Q-SLERP-S2
 
 \ Q-SLERP ( qw1 qx1 qy1 qz1 qw2 qx2 qy2 qz2 t_q32 -- qw qx qy qz )
 \ Spherical Linear Interpolation between two unit quaternions with parameter t in [0, 1].
@@ -268,15 +272,12 @@ VARIABLE Q-SLERP-T
 
     \ If quaternions are very close, use fast linear interpolation (LERP)
     Q-SLERP-DOT @ 4080218931 > IF \ cos_omega > 0.95
-        \ scale1 = 1 - t
-        Q32-ONE Q-SLERP-T @ -
-        \ scale2 = t
-        Q-SLERP-T @
-        >R >R
-        Q-TEMP-W1 @ R@ Q32* Q-TEMP-W2 @ 2 PICK Q32* +
-        Q-TEMP-X1 @ R@ Q32* Q-TEMP-X2 @ 2 PICK Q32* +
-        Q-TEMP-Y1 @ R@ Q32* Q-TEMP-Y2 @ 2 PICK Q32* +
-        Q-TEMP-Z1 @ R> Q32* Q-TEMP-Z2 @ R> Q32* +
+        Q32-ONE Q-SLERP-T @ - Q-SLERP-S1 !
+        Q-SLERP-T @ Q-SLERP-S2 !
+        Q-TEMP-W1 @ Q-SLERP-S1 @ Q32* Q-TEMP-W2 @ Q-SLERP-S2 @ Q32* +
+        Q-TEMP-X1 @ Q-SLERP-S1 @ Q32* Q-TEMP-X2 @ Q-SLERP-S2 @ Q32* +
+        Q-TEMP-Y1 @ Q-SLERP-S1 @ Q32* Q-TEMP-Y2 @ Q-SLERP-S2 @ Q32* +
+        Q-TEMP-Z1 @ Q-SLERP-S1 @ Q32* Q-TEMP-Z2 @ Q-SLERP-S2 @ Q32* +
         Q-NORMALIZE
         EXIT
     THEN
@@ -288,24 +289,21 @@ VARIABLE Q-SLERP-T
     DUP >R \ R: omega
 
     CORDIC-SIN \ sin(omega)
-    DUP >R \ R: omega sin_omega
+    \ Stack: sin(omega) ( R: omega )
 
     \ scale1 = sin((1 - t) * omega) / sin(omega)
-    Q32-ONE Q-SLERP-T @ - 2 PICK Q32* CORDIC-SIN
-    R@ Q32/ >R \ R: omega sin_omega scale1
+    Q32-ONE Q-SLERP-T @ - R@ Q32* CORDIC-SIN
+    OVER Q32/ Q-SLERP-S1 !
 
     \ scale2 = sin(t * omega) / sin(omega)
-    Q-SLERP-T @ 3 PICK Q32* CORDIC-SIN
-    2 PICK Q32/ \ Stack: scale2
-
-    R> R> R> 2DROP DROP \ Stack: scale2 scale1
-    SWAP >R >R \ R: scale2 scale1
-
-    Q-TEMP-W1 @ R@ Q32* Q-TEMP-W2 @ 2 PICK Q32* +
-    Q-TEMP-X1 @ R@ Q32* Q-TEMP-X2 @ 2 PICK Q32* +
-    Q-TEMP-Y1 @ R@ Q32* Q-TEMP-Y2 @ 2 PICK Q32* +
-    Q-TEMP-Z1 @ R> Q32* Q-TEMP-Z2 @ R> Q32* +
+    Q-SLERP-T @ R@ Q32* CORDIC-SIN
+    SWAP Q32/ Q-SLERP-S2 !
     R> DROP
+
+    Q-TEMP-W1 @ Q-SLERP-S1 @ Q32* Q-TEMP-W2 @ Q-SLERP-S2 @ Q32* +
+    Q-TEMP-X1 @ Q-SLERP-S1 @ Q32* Q-TEMP-X2 @ Q-SLERP-S2 @ Q32* +
+    Q-TEMP-Y1 @ Q-SLERP-S1 @ Q32* Q-TEMP-Y2 @ Q-SLERP-S2 @ Q32* +
+    Q-TEMP-Z1 @ Q-SLERP-S1 @ Q32* Q-TEMP-Z2 @ Q-SLERP-S2 @ Q32* +
 ;
 
 \ ------------------------------------------------------------------------------

@@ -124,29 +124,31 @@ VARIABLE CORDIC-I
         Q32-TWO-PI +
     REPEAT
 
-    \ Check quadrants
     DUP Q32-HALF-PI > IF
-        Q32-PI - -1 1 EXIT
+        Q32-PI - -1 -1
+    ELSE
+        DUP Q32-HALF-PI NEGATE < IF
+            Q32-PI + -1 -1
+        ELSE
+            1 1
+        THEN
     THEN
-    DUP Q32-HALF-PI NEGATE < IF
-        Q32-PI + -1 1 EXIT
-    THEN
-    1 1
 ;
 
 \ CORDIC-SIN-COS ( angle_q32 -- sin_q32 cos_q32 )
 \ Compute sine and cosine simultaneously in Q32.32 format.
+\ Returns ( sin cos ) with cos at top of stack.
 : CORDIC-SIN-COS ( angle_q32 -- sin_q32 cos_q32 )
     NORMALIZE-ANGLE-Q32 >R >R
     \ Initial vector: x0 = 1/K, y0 = 0, z0 = angle
     CORDIC-INV-K 0 ROT
     CORDIC-ROTATE-CORE
     DROP \ Discard residual z
-    \ Stack: ( cos sin )
-    R> 0< IF NEGATE THEN \ Apply sign_cos
-    SWAP
-    R> 0< IF NEGATE THEN \ Apply sign_sin
-    SWAP
+    \ Stack: ( cos_mag sin_mag )
+    \ R stack: ( R: sign_sin sign_cos )
+    R> 0< IF SWAP NEGATE SWAP THEN \ Apply sign_cos to cos
+    R> 0< IF NEGATE THEN           \ Apply sign_sin to sin
+    SWAP \ Return ( sin cos ) with cos on TOS
 ;
 
 \ CORDIC-SIN ( angle_q32 -- sin_q32 )
@@ -161,7 +163,7 @@ VARIABLE CORDIC-I
 
 \ CORDIC-TAN ( angle_q32 -- tan_q32 )
 : CORDIC-TAN ( angle_q32 -- tan_q32 )
-    CORDIC-SIN-COS SWAP OVER Q32/
+    CORDIC-SIN-COS Q32/
 ;
 
 \ ------------------------------------------------------------------------------

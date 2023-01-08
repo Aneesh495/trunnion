@@ -221,10 +221,11 @@ VARIABLE M3-RZ
 \   [    0     0    1 ]
 : M3-ROT-Z ( angle m_out -- )
     DUP M3-ZERO
-    SWAP CORDIC-SIN-COS \ Stack: ( m_out sin cos )
-    ROT >R \ R: m_out
-    2DUP R@ 0 0 M3!
-    R@ 1 1 M3!
+    >R
+    CORDIC-SIN-COS \ Stack: ( sin cos )
+    DUP R@ 0 0 M3!
+    DUP R@ 1 1 M3!
+    DROP \ Stack: ( sin )
     DUP NEGATE R@ 0 1 M3!
     R@ 1 0 M3!
     Q32-ONE R> 2 2 M3!
@@ -237,10 +238,11 @@ VARIABLE M3-RZ
 \   [ -sin    0   cos ]
 : M3-ROT-Y ( angle m_out -- )
     DUP M3-ZERO
-    SWAP CORDIC-SIN-COS \ Stack: ( m_out sin cos )
-    ROT >R
-    2DUP R@ 0 0 M3!
-    R@ 2 2 M3!
+    >R
+    CORDIC-SIN-COS \ Stack: ( sin cos )
+    DUP R@ 0 0 M3!
+    DUP R@ 2 2 M3!
+    DROP \ Stack: ( sin )
     DUP R@ 0 2 M3!
     NEGATE R@ 2 0 M3!
     Q32-ONE R> 1 1 M3!
@@ -253,10 +255,11 @@ VARIABLE M3-RZ
 \   [    0   sin  cos ]
 : M3-ROT-X ( angle m_out -- )
     DUP M3-ZERO
-    SWAP CORDIC-SIN-COS \ Stack: ( m_out sin cos )
-    ROT >R
-    2DUP R@ 1 1 M3!
-    R@ 2 2 M3!
+    >R
+    CORDIC-SIN-COS \ Stack: ( sin cos )
+    DUP R@ 1 1 M3!
+    DUP R@ 2 2 M3!
+    DROP \ Stack: ( sin )
     DUP NEGATE R@ 1 2 M3!
     R@ 2 1 M3!
     Q32-ONE R> 0 0 M3!
