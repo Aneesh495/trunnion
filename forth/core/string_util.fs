@@ -23,22 +23,24 @@
     DROP
 ;
 
+VARIABLE SC-A1
+VARIABLE SC-L1
+VARIABLE SC-A2
+VARIABLE SC-L2
+
 \ STR-CMP ( c-addr1 len1 c-addr2 len2 -- diff )
 \ Compare two strings lexicographically. Returns 0 if identical, <0 if s1 < s2, >0 if s1 > s2.
-: STR-CMP ( c-addr1 len1 c-addr2 len2 -- diff )
-    2OVER 2OVER MIN >R \ R: min_len
-    DROP NIP \ Stack: ( c-addr1 c-addr2 )
-    R> 0 DO
-        OVER I + C@
-        OVER I + C@
-        2DUP - DUP 0<> IF
-            -ROT 2DROP UNLOOP EXIT
-        THEN
-        2DROP
+: STR-CMP ( a1 l1 a2 l2 -- diff )
+    SC-L2 ! SC-A2 !
+    SC-L1 ! SC-A1 !
+    SC-L1 @ SC-L2 @ MIN
+    0 ?DO
+        SC-A1 @ I + C@
+        SC-A2 @ I + C@
+        - DUP 0<> IF UNLOOP EXIT THEN
+        DROP
     LOOP
-    2DROP
-    \ If prefixes match, compare lengths: len1 - len2
-    -
+    SC-L1 @ SC-L2 @ -
 ;
 
 \ STR-PREFIX? ( c-addr len prefix-addr prefix-len -- flag )
@@ -64,6 +66,7 @@
 \ ------------------------------------------------------------------------------
 
 VARIABLE STR-CONV-BUF 64 ALLOT
+VARIABLE STR-PTR
 
 \ U>STR ( u dst_buf -- len )
 \ Convert unsigned 64-bit integer to decimal string at dst_buf.
@@ -73,21 +76,18 @@ VARIABLE STR-CONV-BUF 64 ALLOT
         0 OVER 1+ C!
         DROP 1 EXIT
     THEN
-    \ Stack: ( dst u )
-    STR-CONV-BUF 63 + 0 OVER C! \ Null-terminate scratch buffer
-    >R \ R: scratch_ptr
+    STR-CONV-BUF 63 + DUP 0 SWAP C! STR-PTR !
     BEGIN
         DUP 0>
     WHILE
         10 /MOD
-        [CHAR] 0 +
-        R@ 1- DUP >R C!
-        R>
+        SWAP [CHAR] 0 +
+        STR-PTR @ 1- DUP STR-PTR ! C!
     REPEAT
-    DROP \ Drop remaining 0
-    \ Copy scratch string to destination
-    STR-CONV-BUF 63 + R@ - >R \ R: len
-    R@ OVER R> MOVE
+    DROP
+    STR-CONV-BUF 63 + STR-PTR @ - >R \ R: len
+    STR-PTR @ OVER R@ MOVE
+    0 OVER R@ + C!
     DROP R>
 ;
 
@@ -104,7 +104,7 @@ VARIABLE STR-CONV-BUF 64 ALLOT
         THEN
         OVER I + C!
     LOOP
-    NIP
+    2DROP
     8
 ;
 

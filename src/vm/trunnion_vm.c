@@ -779,8 +779,10 @@ static void prim_move(trunnion_vm_t *vm) {
     cell_t u = trunnion_vm_pop(vm);
     cell_t dest = trunnion_vm_pop(vm);
     cell_t src = trunnion_vm_pop(vm);
-    if (u > 0 && src >= 0 && dest >= 0 && src + u <= TRUNNION_VM_MEMORY_SIZE && dest + u <= TRUNNION_VM_MEMORY_SIZE) {
-        memmove(vm->memory + dest, vm->memory + src, u);
+    if (u > 0) {
+        uint8_t *src_ptr = (src >= 0 && src < TRUNNION_VM_MEMORY_SIZE) ? vm->memory + src : (uint8_t *)(uintptr_t)src;
+        uint8_t *dst_ptr = (dest >= 0 && dest < TRUNNION_VM_MEMORY_SIZE) ? vm->memory + dest : (uint8_t *)(uintptr_t)dest;
+        memmove(dst_ptr, src_ptr, (size_t)u);
     }
 }
 static void prim_fill(trunnion_vm_t *vm) {
@@ -979,7 +981,9 @@ static void prim_type(trunnion_vm_t *vm) {
     cell_t u = trunnion_vm_pop(vm);
     cell_t addr = trunnion_vm_pop(vm);
     if (u > 0 && addr != 0) {
-        const char *p = (const char *)(uintptr_t)addr;
+        const char *p = (addr >= 0 && addr < TRUNNION_VM_MEMORY_SIZE) ?
+                        (const char *)(vm->memory + addr) :
+                        (const char *)(uintptr_t)addr;
         for (cell_t i = 0; i < u; i++) putchar(p[i]);
         fflush(stdout);
     }
@@ -1037,7 +1041,9 @@ static void prim_hw_log(trunnion_vm_t *vm) {
     cell_t addr = trunnion_vm_pop(vm);
     if (u > 0 && addr != 0) {
         printf("[PAYLOAD LOG @ %llu us] ", (unsigned long long)vm->simulated_time_us);
-        const char *p = (const char *)(uintptr_t)addr;
+        const char *p = (addr >= 0 && addr < TRUNNION_VM_MEMORY_SIZE) ?
+                        (const char *)(vm->memory + addr) :
+                        (const char *)(uintptr_t)addr;
         for (cell_t i = 0; i < u; i++) putchar(p[i]);
         printf("\n");
         fflush(stdout);
@@ -1579,10 +1585,13 @@ bool trunnion_vm_eval_string(trunnion_vm_t *vm, const char *str) {
                 memcpy(vm->memory + str_dest, str_start, str_len);
                 vm->here = (vm->here + str_len + (sizeof(cell_t) - 1)) & ~(sizeof(cell_t) - 1);
             } else {
-                /* Copy string into PAD */
-                memcpy(vm->pad, str_start, str_len);
-                vm->pad[str_len] = '\0';
-                trunnion_vm_push(vm, (cell_t)(uintptr_t)vm->pad);
+                /* Copy string into PAD at offset 512 in Forth linear memory */
+                cell_t pad_offset = 512;
+                if (str_len < 500) {
+                    memcpy(vm->memory + pad_offset, str_start, str_len);
+                    vm->memory[pad_offset + str_len] = '\0';
+                }
+                trunnion_vm_push(vm, pad_offset);
                 trunnion_vm_push(vm, (cell_t)str_len);
             }
             continue;

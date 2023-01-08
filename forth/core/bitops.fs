@@ -113,15 +113,18 @@ CREATE CRC16-TABLE
     SWAP 8 LSHIFT $FFFF AND XOR
 ;
 
+VARIABLE CRC16-STATE
+
 \ CRC16-CCITT-BUFFER ( addr len -- crc16 )
 \ Compute CRC-16-CCITT checksum over buffer memory.
 : CRC16-CCITT-BUFFER ( addr len -- crc )
-    $FFFF -ROT \ Initial seed 0xFFFF
-    0 DO
-        OVER I + C@
-        CRC16-CCITT-UPDATE
+    $FFFF CRC16-STATE !
+    0 ?DO
+        DUP I + C@
+        CRC16-STATE @ SWAP CRC16-CCITT-UPDATE CRC16-STATE !
     LOOP
-    NIP
+    DROP
+    CRC16-STATE @
 ;
 
 \ ------------------------------------------------------------------------------
@@ -153,13 +156,15 @@ CREATE CRC32-TABLE
     SWAP 4 RSHIFT XOR
 ;
 
+VARIABLE CRC32-STATE
+
 \ CRC32-BUFFER ( addr len -- crc32 )
 : CRC32-BUFFER ( addr len -- crc )
-    $FFFFFFFF -ROT
-    0 DO
-        OVER I + C@
-        CRC32-UPDATE
+    $FFFFFFFF CRC32-STATE !
+    0 ?DO
+        DUP I + C@
+        CRC32-STATE @ SWAP CRC32-UPDATE CRC32-STATE !
     LOOP
-    NIP
-    $FFFFFFFF XOR
+    DROP
+    CRC32-STATE @ $FFFFFFFF XOR
 ;
