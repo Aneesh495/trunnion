@@ -70,22 +70,26 @@ VARIABLE OFFLOAD-DELTA-EL
 
     \ Check if tip offload threshold exceeded
     OFFLOAD-ACC-TIP @ Q32>S ABS OFFLOAD-THRESHOLD-NRAD > IF
+        TRUE OFFLOAD-TRIGGERED !
         \ Convert nanoradians to Q32.32 radians
         OFFLOAD-ACC-TIP @ Q32>S S>Q32 1000000000 S>Q32 Q32/
         OFFLOAD-DELTA-AZ !
         \ Command CPA azimuth slew by delta
         CPA-AZ-ANGLE@ OFFLOAD-DELTA-AZ @ +
-        0.01 S>Q32 CPA-SERVO-AZ-STEP
+        42949673 CPA-SERVO-AZ-STEP
         \ Deduct offloaded bias from accumulator
         0 OFFLOAD-ACC-TIP !
+    ELSE
+        FALSE OFFLOAD-TRIGGERED !
     THEN
 
     \ Check if tilt offload threshold exceeded
     OFFLOAD-ACC-TILT @ Q32>S ABS OFFLOAD-THRESHOLD-NRAD > IF
+        TRUE OFFLOAD-TRIGGERED !
         OFFLOAD-ACC-TILT @ Q32>S S>Q32 1000000000 S>Q32 Q32/
         OFFLOAD-DELTA-EL !
         CPA-EL-ANGLE@ OFFLOAD-DELTA-EL @ +
-        0.01 S>Q32 CPA-SERVO-EL-STEP
+        42949673 CPA-SERVO-EL-STEP
         0 OFFLOAD-ACC-TILT !
     THEN
 ;

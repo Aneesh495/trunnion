@@ -124,6 +124,5 @@ VARIABLE CPA-RHO
 \ CPA-TARGET-UNWRAP ( current_az target_az -- unwrapped_target )
 \ Return target azimuth unwrapped relative to current position.
 : CPA-TARGET-UNWRAP ( cur target -- unwrapped )
-    2DUP CPA-SHORTEST-ARC +
-    NIP
+    OVER SWAP CPA-SHORTEST-ARC +
 ;

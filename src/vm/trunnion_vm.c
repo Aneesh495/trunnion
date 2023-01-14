@@ -1356,7 +1356,7 @@ static void register_core_primitives(trunnion_vm_t *vm) {
     add_word(vm, "LOOP", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_loop, 0);
     add_word(vm, "+LOOP", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_plus_loop, 0);
     add_word(vm, "RECURSE", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_recurse, 0);
-    add_word(vm, "EXIT", FLAG_PRIMITIVE, prim_exit, 0);
+    add_word(vm, "EXIT", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_exit, 0);
     add_word(vm, "EXECUTE", FLAG_PRIMITIVE, prim_execute, 0);
     add_word(vm, "CASE", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_case, 0);
     add_word(vm, "OF", FLAG_PRIMITIVE | FLAG_IMMEDIATE, prim_of, 0);

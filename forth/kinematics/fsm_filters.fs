@@ -35,14 +35,14 @@
 \ BIQUAD-INIT ( addr b0 b1 b2 a1 a2 -- )
 \ Initialize biquad coefficients and clear delay states.
 : BIQUAD-INIT ( addr b0 b1 b2 a1 a2 -- )
-    >R >R >R >R >R \ R: a2 a1 b2 b1 b0
-    R> 2 PICK !
-    R> 2 PICK CELL+ !
-    R> 2 PICK 2 CELLS + !
-    R> 2 PICK 3 CELLS + !
-    R> 2 PICK 4 CELLS + !
-    0 OVER 5 CELLS + !
-    0 OVER 6 CELLS + !
+    >R >R >R >R >R          \ R: a2 a1 b2 b1 b0, D: addr
+    DUP R> SWAP !           \ b0
+    DUP R> SWAP CELL+ !     \ b1
+    DUP R> SWAP 2 CELLS + ! \ b2
+    DUP R> SWAP 3 CELLS + ! \ a1
+    DUP R> SWAP 4 CELLS + ! \ a2
+    0 OVER 5 CELLS + !      \ d1 = 0
+    0 OVER 6 CELLS + !      \ d2 = 0
     DROP
 ;
 

@@ -75,18 +75,22 @@ VARIABLE FSM-V3
 \ Section 2: Sensor Feedback Transformation
 \ ------------------------------------------------------------------------------
 
+VARIABLE FSM-Z1
+VARIABLE FSM-Z2
+VARIABLE FSM-Z3
+
 \ FSM-PIEZO>ANGLES ( v1 v2 v3 -- tip_nrad tilt_nrad )
 \ Convert actuator capacitive readbacks to tip/tilt angles in nanoradians.
 : FSM-PIEZO>ANGLES ( v1 v2 v3 -- tip tilt )
-    32768 - S>Q32 32000 S>Q32 Q32/ FSM-MAX-NRAD S>Q32 Q32* Q32>S >R \ z3
-    32768 - S>Q32 32000 S>Q32 Q32/ FSM-MAX-NRAD S>Q32 Q32* Q32>S >R \ z2
-    32768 - S>Q32 32000 S>Q32 Q32/ FSM-MAX-NRAD S>Q32 Q32* Q32>S \ z1
+    32768 - S>Q32 32000 S>Q32 Q32/ FSM-MAX-NRAD S>Q32 Q32* Q32>S FSM-Z3 !
+    32768 - S>Q32 32000 S>Q32 Q32/ FSM-MAX-NRAD S>Q32 Q32* Q32>S FSM-Z2 !
+    32768 - S>Q32 32000 S>Q32 Q32/ FSM-MAX-NRAD S>Q32 Q32* Q32>S FSM-Z1 !
 
     \ tip = (2*z1 - z2 - z3) / 3
-    2 * R@ - 2 PICK - 3 / \ Stack: ( tip )
+    FSM-Z1 @ 2* FSM-Z2 @ - FSM-Z3 @ - 3 /
 
-    \ tilt = (z2 - z3) / sqrt(3) ~ (z2 - z3) * 0.57735
-    R> R> - S>Q32 2479715014 Q32* Q32>S \ Stack: ( tip tilt )
+    \ tilt = (z2 - z3) / sqrt(3) ~ (z2 - z3) * 0.577350269
+    FSM-Z2 @ FSM-Z3 @ - S>Q32 2479715014 Q32* Q32>S
 ;
 
 \ ------------------------------------------------------------------------------

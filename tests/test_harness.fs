@@ -61,6 +61,10 @@ TEST-HARNESS-INIT
     >R - ABS R> <= ASSERT-TRUE
 ;
 
+: ASSERT-CLOSE ( actual expected tol -- )
+    >R - ABS R> <= ASSERT-TRUE
+;
+
 : TEST-REPORT-SUMMARY ( -- )
     CR ." --------------------------------------------------------" CR
     ." TEST EXECUTION SUMMARY:" CR

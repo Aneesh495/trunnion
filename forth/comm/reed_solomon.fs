@@ -32,9 +32,9 @@ CREATE GF-LOG 256 CELLS ALLOT   \ Logarithm table (log_alpha(x))
 
     1 \ Initial alpha^0 = 1
     255 0 DO
-        DUP I GF-EXP SWAP CELLS + !
-        DUP I 255 + GF-EXP SWAP CELLS + ! \ Duplicate for wrap-around
-        DUP I GF-LOG SWAP CELLS + !
+        DUP I CELLS GF-EXP + !
+        DUP I 255 + CELLS GF-EXP + ! \ Duplicate for wrap-around
+        I OVER CELLS GF-LOG + !      \ GF-LOG[val] = I
 
         \ Multiply by alpha (x) in GF(2^8)
         1 LSHIFT
@@ -89,10 +89,10 @@ VARIABLE RS-ROOT
 
         \ Multiply polynomial: g(x) * (x - root)
         \ Traverse downwards from I+1 down to 1
-        I 1+ BEGIN
+        I 1+
+        BEGIN
             DUP 0>
         WHILE
-            \ g[j] = g[j-1] XOR (g[j] * root)
             DUP CELLS RS-GEN-POLY + @ RS-ROOT @ GF-MUL
             OVER 1- CELLS RS-GEN-POLY + @ XOR
             OVER CELLS RS-GEN-POLY + !
