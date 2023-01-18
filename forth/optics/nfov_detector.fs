@@ -51,9 +51,9 @@ VARIABLE NFOV-SUM-WY
                 NFOV-THRESH @ - \ Subtract noise pedestal
                 DUP NFOV-SUM-INTENSITY @ + NFOV-SUM-INTENSITY !
                 \ Accumulate X moment: i * val
-                DUP I S>Q32 Q32* NFOV-SUM-WX @ + NFOV-SUM-WX !
+                DUP I * NFOV-SUM-WX @ + NFOV-SUM-WX !
                 \ Accumulate Y moment: j * val
-                J S>Q32 Q32* NFOV-SUM-WY @ + NFOV-SUM-WY !
+                J * NFOV-SUM-WY @ + NFOV-SUM-WY !
             ELSE
                 DROP
             THEN
@@ -65,10 +65,10 @@ VARIABLE NFOV-SUM-WY
         0 0 FALSE EXIT
     THEN
 
-    \ cx = sum_wx / sum_intensity
-    NFOV-SUM-WX @ NFOV-SUM-INTENSITY @ S>Q32 Q32/
-    \ cy = sum_wy / sum_intensity
-    NFOV-SUM-WY @ NFOV-SUM-INTENSITY @ S>Q32 Q32/
+    \ cx = sum_wx / sum_intensity in Q32.32
+    NFOV-SUM-WX @ S>Q32 NFOV-SUM-INTENSITY @ S>Q32 Q32/
+    \ cy = sum_wy / sum_intensity in Q32.32
+    NFOV-SUM-WY @ S>Q32 NFOV-SUM-INTENSITY @ S>Q32 Q32/
     TRUE
 ;
 

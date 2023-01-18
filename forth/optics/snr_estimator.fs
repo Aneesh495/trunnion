@@ -28,8 +28,7 @@ VARIABLE SNR-CALC-BG
 
 : LOG10-Q32 ( x -- log10_x )
     DUP 0<= IF DROP 0 EXIT THEN
-    S>F FLN F>S S>Q32
-    LN-10-Q32 Q32/
+    S>F 4294967296.0e0 F/ FLN 2.302585092994e0 F/ 4294967296.0e0 F* F>S
 ;
 
 \ SNR-ESTIMATE-DB ( sig_nw bg_nw -- snr_db_q32 )

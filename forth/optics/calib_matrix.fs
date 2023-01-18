@@ -46,5 +46,8 @@ VARIABLE CALIB-CURRENT-TEMP-MK
 \ CALIB-APPLY ( rx ry rz -- cx cy cz )
 \ Multiply raw sensor vector by calibration matrix to obtain true optical LOS.
 : CALIB-APPLY ( rx ry rz -- cx cy cz )
-    CALIB-MATRIX -ROT M3*V3
+    >R >R >R
+    CALIB-MATRIX
+    R> R> R>
+    M3*V3
 ;
