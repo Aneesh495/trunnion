@@ -31,6 +31,7 @@ VARIABLE PAA-VTX-X  VARIABLE PAA-VTX-Y  VARIABLE PAA-VTX-Z
 VARIABLE PAA-VRX-X  VARIABLE PAA-VRX-Y  VARIABLE PAA-VRX-Z
 VARIABLE PAA-LOS-X  VARIABLE PAA-LOS-Y  VARIABLE PAA-LOS-Z
 VARIABLE PAA-VREL-X VARIABLE PAA-VREL-Y VARIABLE PAA-VREL-Z
+VARIABLE PAA-VPAR-X VARIABLE PAA-VPAR-Y VARIABLE PAA-VPAR-Z
 VARIABLE PAA-VPERP-X VARIABLE PAA-VPERP-Y VARIABLE PAA-VPERP-Z
 
 \ ------------------------------------------------------------------------------
@@ -53,12 +54,12 @@ VARIABLE PAA-VPERP-X VARIABLE PAA-VPERP-Y VARIABLE PAA-VPERP-Z
     PAA-VREL-X @ PAA-VREL-Y @ PAA-VREL-Z @
     PAA-LOS-X @ PAA-LOS-Y @ PAA-LOS-Z @
     V3-PROJ \ Stack: ( vpar_x vpar_y vpar_z )
+    PAA-VPAR-Z ! PAA-VPAR-Y ! PAA-VPAR-X !
 
     \ Transverse component: v_perp = v_rel - v_par
-    PAA-VREL-X @ PAA-VREL-Y @ PAA-VREL-Z @
-    2SWAP \ Stack: ( vrel vpar )
-    V3- \ Stack: ( vperp_x vperp_y vperp_z )
-    PAA-VPERP-Z ! PAA-VPERP-Y ! PAA-VPERP-X !
+    PAA-VREL-X @ PAA-VPAR-X @ - PAA-VPERP-X !
+    PAA-VREL-Y @ PAA-VPAR-Y @ - PAA-VPERP-Y !
+    PAA-VREL-Z @ PAA-VPAR-Z @ - PAA-VPERP-Z !
 
     \ Point-ahead angle = (2 / c) * v_perp
     PAA-VPERP-X @ PAA-TWO-OVER-C-Q32 Q32*

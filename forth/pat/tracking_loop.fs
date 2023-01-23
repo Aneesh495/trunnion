@@ -63,6 +63,11 @@ VARIABLE TRACK-OUT-SPEC-TICKS    \ Consecutive samples where error >= 1.0 urad
     0 0 FSM-SET-COMMAND
 ;
 
+\ TRACK-LOOP-ACTIVE? ( -- flag )
+: TRACK-LOOP-ACTIVE? ( -- flag )
+    TRACK-ENABLED @ 0<>
+;
+
 \ ------------------------------------------------------------------------------
 \ Section 3: Dual-Stage LOS Error Processing
 \ ------------------------------------------------------------------------------

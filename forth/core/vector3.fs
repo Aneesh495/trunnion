@@ -191,22 +191,34 @@ VARIABLE V3-B-Z
 \ Section 4: Projections and Geometric Angles
 \ ------------------------------------------------------------------------------
 
+VARIABLE V3-PRJ-UX VARIABLE V3-PRJ-UY VARIABLE V3-PRJ-UZ
+VARIABLE V3-PRJ-S
+
 \ V3-PROJ ( vx vy vz ux uy uz -- px py pz )
 \ Project vector v onto unit vector u: (v . u) * u.
 : V3-PROJ ( vx vy vz ux uy uz -- px py pz )
-    4DUP >R >R >R >R >R >R
-    V3-DOT
-    R> R> R> R> R> R> 2DROP 2DROP DROP
-    V3*SCALE
+    V3-PRJ-UZ ! V3-PRJ-UY ! V3-PRJ-UX !
+    \ Stack: ( vx vy vz )
+    V3-PRJ-UZ @ Q32*
+    SWAP V3-PRJ-UY @ Q32* +
+    SWAP V3-PRJ-UX @ Q32* + \ (v . u)
+    DUP V3-PRJ-S !
+    V3-PRJ-UX @ Q32*
+    V3-PRJ-S @ V3-PRJ-UY @ Q32*
+    V3-PRJ-S @ V3-PRJ-UZ @ Q32*
 ;
 
 \ V3-REJECT ( vx vy vz ux uy uz -- rx ry rz )
 \ Compute component of v perpendicular to unit vector u: v - proj_u(v).
 : V3-REJECT ( vx vy vz ux uy uz -- rx ry rz )
-    4DUP >R >R >R >R >R >R
+    V3-B-Z ! V3-B-Y ! V3-B-X !
+    V3-A-Z ! V3-A-Y ! V3-A-X !
+    V3-A-X @ V3-A-Y @ V3-A-Z @
+    V3-B-X @ V3-B-Y @ V3-B-Z @
     V3-PROJ
-    R> R> R> R> R> R> 2DROP 2DROP DROP
-    V3-
+    V3-A-Z @ SWAP -
+    SWAP V3-A-Y @ SWAP -
+    SWAP V3-A-X @ SWAP -
 ;
 
 \ V3-ANGLE ( x1 y1 z1 x2 y2 z2 -- angle_rad_q32 )

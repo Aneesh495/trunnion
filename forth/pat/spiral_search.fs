@@ -90,7 +90,7 @@ VARIABLE SPIRAL-SIN-PHI
 
     \ phi(t) = sqrt( (4*pi * v_scan / pitch) * t )
     \ Factor: (4*pi * v_scan / pitch)
-    Q32-TWO-PI 2* S>Q32 Q32*
+    Q32-TWO-PI 2*
     SPIRAL-SCAN-VEL-NRAD-S @ S>Q32 Q32*
     SPIRAL-PITCH-NRAD @ S>Q32 Q32/
     SWAP Q32* \ Argument under sqrt
