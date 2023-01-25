@@ -80,10 +80,10 @@ VARIABLE KEPLER-COS-E
     KEPLER-M @ KEPLER-CURR-E ! \ Initial guess: E0 = M
 
     6 0 DO
-        \ Compute sin(E) and cos(E) using CORDIC
+        \ Compute sin(E) and cos(E) using CORDIC: returns ( sin cos ) with cos on TOS
         KEPLER-CURR-E @ CORDIC-SIN-COS
-        KEPLER-SIN-E !
         KEPLER-COS-E !
+        KEPLER-SIN-E !
 
         \ Numerator: f(E) = E - e*sin(E) - M
         KEPLER-CURR-E @
@@ -117,10 +117,10 @@ VARIABLE PERI-H-FACTOR
 \ ORB-COMPUTE-PERIFOCAL ( -- )
 \ Calculate perifocal position and velocity vectors from orbital elements and E.
 : ORB-COMPUTE-PERIFOCAL ( -- )
-    \ Compute sin(E) and cos(E)
+    \ Compute sin(E) and cos(E): returns ( sin cos ) with cos on TOS
     ORB-ECC-ANOM-Q32 @ CORDIC-SIN-COS
-    KEPLER-SIN-E !
     KEPLER-COS-E !
+    KEPLER-SIN-E !
 
     \ Radius: r = a * (1 - e * cos(E))
     Q32-ONE ORB-ECC-Q32 @ KEPLER-COS-E @ Q32* -
@@ -175,9 +175,9 @@ CREATE ORB-DCM-P2ECI 9 CELLS ALLOT
 \ Construct 3x3 direction cosine rotation matrix from Perifocal to ECI frame:
 \ R = R_z(-Omega) * R_x(-i) * R_z(-omega)
 : ORB-BUILD-TRANSFORM ( -- )
-    ORB-RAAN-RAD-Q32 @ CORDIC-SIN-COS ROT-SIN-O ! ROT-COS-O !
-    ORB-INC-RAD-Q32  @ CORDIC-SIN-COS ROT-SIN-I ! ROT-COS-I !
-    ORB-AOP-RAD-Q32  @ CORDIC-SIN-COS ROT-SIN-W ! ROT-COS-W !
+    ORB-RAAN-RAD-Q32 @ CORDIC-SIN-COS ROT-COS-O ! ROT-SIN-O !
+    ORB-INC-RAD-Q32  @ CORDIC-SIN-COS ROT-COS-I ! ROT-SIN-I !
+    ORB-AOP-RAD-Q32  @ CORDIC-SIN-COS ROT-COS-W ! ROT-SIN-W !
 
     \ Row 0:
     \ R00 = cos(O)*cos(w) - sin(O)*sin(w)*cos(i)

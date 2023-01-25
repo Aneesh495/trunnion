@@ -39,14 +39,18 @@ VARIABLE LOS-EL-RAD-Q32
 \ Section 2: Relative Vector and Doppler Calculation
 \ ------------------------------------------------------------------------------
 
+VARIABLE LOS-TX-X VARIABLE LOS-TX-Y VARIABLE LOS-TX-Z
+VARIABLE LOS-RX-X VARIABLE LOS-RX-Y VARIABLE LOS-RX-Z
+
 \ LOS-COMPUTE-RELATIVE ( tx_x tx_y tx_z rx_x rx_y rx_z -- )
 \ Calculate relative separation vector and range between two spacecraft.
 : LOS-COMPUTE-RELATIVE ( tx_x tx_y tx_z rx_x rx_y rx_z -- )
-    \ rx - tx for each axis
-    2SWAP \ Stack: ( tx_x tx_y rx_x rx_y tx_z rx_z )
-    SWAP - LOS-REL-Z-KM-Q32 !
-    ROT SWAP - LOS-REL-Y-KM-Q32 !
-    SWAP - LOS-REL-X-KM-Q32 !
+    LOS-RX-Z ! LOS-RX-Y ! LOS-RX-X !
+    LOS-TX-Z ! LOS-TX-Y ! LOS-TX-X !
+
+    LOS-RX-X @ LOS-TX-X @ - LOS-REL-X-KM-Q32 !
+    LOS-RX-Y @ LOS-TX-Y @ - LOS-REL-Y-KM-Q32 !
+    LOS-RX-Z @ LOS-TX-Z @ - LOS-REL-Z-KM-Q32 !
 
     \ Compute range: rho = sqrt(dx^2 + dy^2 + dz^2)
     LOS-REL-X-KM-Q32 @ LOS-REL-Y-KM-Q32 @ LOS-REL-Z-KM-Q32 @
@@ -73,11 +77,12 @@ VARIABLE LOS-EL-RAD-Q32
 \ LOS-COMPUTE-DOPPLER ( vtx_x vtx_y vtx_z vrx_x vrx_y vrx_z -- )
 \ Calculate relative velocity, range-rate, and optical Doppler shift in MHz.
 : LOS-COMPUTE-DOPPLER ( vtx_x vtx_y vtx_z vrx_x vrx_y vrx_z -- )
-    \ vrx - vtx for each axis
-    2SWAP
-    SWAP - LOS-VREL-Z-KM-S-Q32 !
-    ROT SWAP - LOS-VREL-Y-KM-S-Q32 !
-    SWAP - LOS-VREL-X-KM-S-Q32 !
+    LOS-RX-Z ! LOS-RX-Y ! LOS-RX-X !
+    LOS-TX-Z ! LOS-TX-Y ! LOS-TX-X !
+
+    LOS-RX-X @ LOS-TX-X @ - LOS-VREL-X-KM-S-Q32 !
+    LOS-RX-Y @ LOS-TX-Y @ - LOS-VREL-Y-KM-S-Q32 !
+    LOS-RX-Z @ LOS-TX-Z @ - LOS-VREL-Z-KM-S-Q32 !
 
     \ Range-rate: drho/dt = v_rel . u_los
     LOS-VREL-X-KM-S-Q32 @ LOS-U-X-Q32 @ Q32*
