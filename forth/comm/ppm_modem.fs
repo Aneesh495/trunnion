@@ -88,17 +88,18 @@ CREATE PPM-SLOT-BUFFER PPM-MAX-SLOTS CELLS ALLOT
 VARIABLE SLICE-BEST-SLOT
 VARIABLE SLICE-MAX-COUNT
 VARIABLE SLICE-SECOND-MAX
+VARIABLE PPM-SLICE-BUF
 
 \ PPM-SLICE-FRAME ( buf_addr -- symbol_bits snr_metric )
 \ Find slot with maximum photon counts using maximum-likelihood decision rule.
 : PPM-SLICE-FRAME ( buf -- symbol snr )
-    >R
+    PPM-SLICE-BUF !
     0 SLICE-MAX-COUNT !
     0 SLICE-SECOND-MAX !
     0 SLICE-BEST-SLOT !
 
     PPM-ORDER @ 0 DO
-        R@ I CELLS + @ \ Photon count in slot I
+        PPM-SLICE-BUF @ I CELLS + @ \ Photon count in slot I
         DUP SLICE-MAX-COUNT @ > IF
             SLICE-MAX-COUNT @ SLICE-SECOND-MAX !
             SLICE-MAX-COUNT !
@@ -112,7 +113,6 @@ VARIABLE SLICE-SECOND-MAX
         THEN
     LOOP
 
-    R> DROP
     1 PPM-RX-SYMBOL-COUNT +!
 
     \ Return best slot (symbol) and extinction ratio metric

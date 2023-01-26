@@ -46,38 +46,37 @@ CREATE DEINTERLEAVE-BUF 2048 ALLOT
 \ Section 3: Interleave and De-Interleave Matrix Transforms
 \ ------------------------------------------------------------------------------
 
+VARIABLE IL-SRC
+VARIABLE IL-DST
+
 \ INTERLEAVE-BLOCK ( src_addr dst_addr -- )
 \ Write I codewords row-by-row, read out column-by-column.
 : INTERLEAVE-BLOCK ( src dst -- )
-    >R >R
+    IL-DST !
+    IL-SRC !
     INTERLEAVE-BLOCK-SIZE 0 DO
         INTERLEAVE-DEPTH @ 0 DO
-            \ src index = J * 255 + I
-            J INTERLEAVE-BLOCK-SIZE * I +
-            2R@ SWAP DROP + C@
+            \ src index = row * 255 + col = I * 255 + J
+            IL-SRC @ I INTERLEAVE-BLOCK-SIZE * J + + C@
 
-            \ dst index = I * depth + J
-            I INTERLEAVE-DEPTH @ * J +
-            R@ + C!
+            \ dst index = col * depth + row = J * depth + I
+            IL-DST @ J INTERLEAVE-DEPTH @ * I + + C!
         LOOP
     LOOP
-    2R> 2DROP
 ;
 
 \ DEINTERLEAVE-BLOCK ( src_addr dst_addr -- )
 \ Inverse transform: write column-by-column, read out row-by-row.
 : DEINTERLEAVE-BLOCK ( src dst -- )
-    >R >R
-    INTERLEAVE-DEPTH @ 0 DO
-        INTERLEAVE-BLOCK-SIZE 0 DO
-            \ src index = J * depth + I
-            J INTERLEAVE-DEPTH @ * I +
-            2R@ SWAP DROP + C@
+    IL-DST !
+    IL-SRC !
+    INTERLEAVE-BLOCK-SIZE 0 DO
+        INTERLEAVE-DEPTH @ 0 DO
+            \ src index = col * depth + row = J * depth + I
+            IL-SRC @ J INTERLEAVE-DEPTH @ * I + + C@
 
-            \ dst index = I * 255 + J
-            I INTERLEAVE-BLOCK-SIZE * J +
-            R@ + C!
+            \ dst index = row * 255 + col = I * 255 + J
+            IL-DST @ I INTERLEAVE-BLOCK-SIZE * J + + C!
         LOOP
     LOOP
-    2R> 2DROP
 ;

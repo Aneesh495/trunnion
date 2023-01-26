@@ -35,27 +35,38 @@ CREATE SPP-TX-SEQ-COUNTERS 256 CELLS ALLOT
 \ Section 2: Space Packet Construction
 \ ------------------------------------------------------------------------------
 
+VARIABLE SPP-HDR-BUF
+VARIABLE SPP-HDR-LEN
+VARIABLE SPP-HDR-SEQ
+VARIABLE SPP-HDR-FLAGS
+VARIABLE SPP-HDR-TYPE
+VARIABLE SPP-HDR-APID
+
 \ SPP-BUILD-HEADER ( apid is_tc? seq_flags seq_count payload_len buf_addr -- )
 \ Populate 6-byte CCSDS primary header at destination buffer.
 : SPP-BUILD-HEADER ( apid is_tc? flags seq len buf -- )
-    >R
-    \ Byte 4..5: Packet Data Length minus 1
-    1- DUP >R
-    $FF AND R@ 5 + C!
-    R> 8 RSHIFT $FF AND R@ 4 + C!
+    SPP-HDR-BUF !
+    SPP-HDR-LEN !
+    SPP-HDR-SEQ !
+    SPP-HDR-FLAGS !
+    SPP-HDR-TYPE !
+    SPP-HDR-APID !
 
-    \ Byte 2..3: Sequence Flags and Sequence Count
-    DUP >R
-    $FF AND R@ 3 + C!
-    R> 8 RSHIFT $3F AND
-    ROT 6 LSHIFT OR R@ 2 + C!
+    \ Byte 4..5: Packet Data Length minus 1
+    SPP-HDR-LEN @ 1- DUP
+    $FF AND SPP-HDR-BUF @ 5 + C!
+    8 RSHIFT $FF AND SPP-HDR-BUF @ 4 + C!
+
+    \ Byte 2..3: Sequence Flags (2 bits) and Sequence Count (14 bits)
+    SPP-HDR-SEQ @ $FF AND SPP-HDR-BUF @ 3 + C!
+    SPP-HDR-SEQ @ 8 RSHIFT $3F AND
+    SPP-HDR-FLAGS @ 6 LSHIFT OR SPP-HDR-BUF @ 2 + C!
 
     \ Byte 0..1: Version (0), Type (0=TM, 1=TC), SecHdr (0), APID (11 bits)
-    DUP >R
-    $FF AND R@ 1 + C!
-    R> 8 RSHIFT $07 AND
-    ROT IF $10 OR THEN \ TC bit
-    R> 0 + C!
+    SPP-HDR-APID @ $FF AND SPP-HDR-BUF @ 1 + C!
+    SPP-HDR-APID @ 8 RSHIFT $07 AND
+    SPP-HDR-TYPE @ IF $10 OR THEN
+    SPP-HDR-BUF @ 0 + C!
 ;
 
 \ SPP-GET-NEXT-SEQ ( apid -- seq_count )
@@ -67,24 +78,51 @@ CREATE SPP-TX-SEQ-COUNTERS 256 CELLS ALLOT
     R>
 ;
 
+VARIABLE SPP-PKT-APID
+VARIABLE SPP-PKT-TYPE
+VARIABLE SPP-PKT-PAYLOAD
+VARIABLE SPP-PKT-LEN
+VARIABLE SPP-PKT-OUT
+VARIABLE SPP-PKT-SEQ
+
 \ SPP-CREATE-PACKET ( apid is_tc? payload_addr payload_len out_buf -- total_len )
 \ Assemble complete Space Packet including primary header, data, and CRC-16.
 : SPP-CREATE-PACKET ( apid is_tc payload len out -- total_len )
-    >R >R >R >R
-    DUP SPP-GET-NEXT-SEQ >R
+    SPP-PKT-OUT !
+    SPP-PKT-LEN !
+    SPP-PKT-PAYLOAD !
+    SPP-PKT-TYPE !
+    SPP-PKT-APID !
+
+    SPP-PKT-APID @ SPP-GET-NEXT-SEQ SPP-PKT-SEQ !
+
     \ Build Header: ( apid is_tc flags seq len buf )
-    R@ R> SPP-UNSEGMENTED R> R> 2 + R@
+    SPP-PKT-APID @
+    SPP-PKT-TYPE @
+    SPP-UNSEGMENTED
+    SPP-PKT-SEQ @
+    SPP-PKT-LEN @ 2 +
+    SPP-PKT-OUT @
     SPP-BUILD-HEADER
 
     \ Copy Payload Data
-    R> R> R@ SPP-PRIMARY-HEADER-BYTES + SWAP CMOVE
+    SPP-PKT-PAYLOAD @
+    SPP-PKT-OUT @ SPP-PRIMARY-HEADER-BYTES +
+    SPP-PKT-LEN @
+    MOVE
 
     \ Compute CRC-16 over Header + Payload
-    R@ SPP-PRIMARY-HEADER-BYTES + @
-    R@ SPP-PRIMARY-HEADER-BYTES + \ Buffer start and length
+    SPP-PKT-OUT @
+    SPP-PRIMARY-HEADER-BYTES SPP-PKT-LEN @ +
+    CRC16-CCITT-BUFFER
+
     \ Append CRC-16 at end
-    R> DROP
-    SPP-PRIMARY-HEADER-BYTES + 2 +
+    DUP 8 RSHIFT $FF AND
+    SPP-PKT-OUT @ SPP-PRIMARY-HEADER-BYTES + SPP-PKT-LEN @ + C!
+    $FF AND
+    SPP-PKT-OUT @ SPP-PRIMARY-HEADER-BYTES + SPP-PKT-LEN @ + 1+ C!
+
+    SPP-PRIMARY-HEADER-BYTES SPP-PKT-LEN @ + 2 +
 ;
 
 \ ------------------------------------------------------------------------------

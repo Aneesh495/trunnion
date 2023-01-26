@@ -112,35 +112,37 @@ VARIABLE RS-ROOT
 
 CREATE RS-PARITY-BUFFER 32 CELLS ALLOT
 
+VARIABLE RS-ENC-MSG
+VARIABLE RS-ENC-PARITY
+VARIABLE RS-FEEDBACK
+
 \ RS-ENCODE-FRAME ( msg_addr parity_out_addr -- )
 \ Calculate 32 parity symbols for 223 payload bytes using LFSR division.
 : RS-ENCODE-FRAME ( msg parity_out -- )
-    >R >R
+    RS-ENC-PARITY !
+    RS-ENC-MSG !
     RS-PARITY-BUFFER 32 CELLS ERASE
 
     RS-K 0 DO
-        R@ I + C@ \ Input byte
-        RS-PARITY-BUFFER 31 CELLS + @ XOR >R \ Feedback symbol
+        RS-ENC-MSG @ I + C@ \ Input byte
+        RS-PARITY-BUFFER 31 CELLS + @ XOR
+        RS-FEEDBACK !
 
-        31 0 DO
-            31 I - DUP 1-
-            RS-PARITY-BUFFER SWAP CELLS + @
-            R@ RS-GEN-POLY 32 I - CELLS + @ GF-MUL XOR
-            RS-PARITY-BUFFER ROT CELLS + !
+        32 1 DO
+            31 I - CELLS RS-PARITY-BUFFER + @
+            RS-FEEDBACK @ RS-GEN-POLY 32 I - CELLS + @ GF-MUL XOR
+            RS-PARITY-BUFFER 32 I - CELLS + !
         LOOP
 
-        R@ RS-GEN-POLY 0 CELLS + @ GF-MUL
+        RS-FEEDBACK @ RS-GEN-POLY 0 CELLS + @ GF-MUL
         RS-PARITY-BUFFER 0 CELLS + !
-        R> DROP
     LOOP
 
     \ Copy parity symbols to destination
     32 0 DO
-        RS-PARITY-BUFFER I CELLS + @
-        2R@ SWAP DROP I + C!
+        RS-PARITY-BUFFER 31 I - CELLS + @
+        RS-ENC-PARITY @ I + C!
     LOOP
-
-    2R> 2DROP
 ;
 
 \ ------------------------------------------------------------------------------
@@ -149,30 +151,33 @@ CREATE RS-PARITY-BUFFER 32 CELLS ALLOT
 
 CREATE RS-SYNDROMES 32 CELLS ALLOT
 VARIABLE RS-HAS-ERRORS
+VARIABLE RS-SYN-CODEWORD
+VARIABLE RS-SYN-ROOT
+VARIABLE RS-SYN-ACC
 
 \ RS-COMPUTE-SYNDROMES ( codeword_addr -- has_errors_flag )
 \ Evaluate 32 syndromes: S_i = sum_{j=0}^{254} r_j * alpha^(11*(112+i)*j)
 : RS-COMPUTE-SYNDROMES ( codeword -- flag )
-    >R
+    RS-SYN-CODEWORD !
     0 RS-HAS-ERRORS !
     RS-SYNDROMES 32 CELLS ERASE
 
     32 0 DO
-        0 \ Syndrome accumulator
+        0 RS-SYN-ACC !
         112 I + 11 * 255 MOD \ Root power
-        CELLS GF-EXP + @ >R \ Root alpha^k
+        CELLS GF-EXP + @ RS-SYN-ROOT !
 
         RS-N 0 DO
-            R@ GF-MUL
-            2R@ SWAP DROP RS-N 1- I - + C@ XOR
+            RS-SYN-ACC @ RS-SYN-ROOT @ GF-MUL
+            RS-SYN-CODEWORD @ I + C@ XOR
+            RS-SYN-ACC !
         LOOP
 
-        DUP I RS-SYNDROMES SWAP CELLS + !
+        RS-SYN-ACC @
+        DUP I CELLS RS-SYNDROMES + !
         0<> IF 1 RS-HAS-ERRORS ! THEN
-        R> DROP
     LOOP
 
-    R> DROP
     RS-HAS-ERRORS @
 ;
 
@@ -211,11 +216,11 @@ VARIABLE RS-NUM-ERRORS
     RS-NUM-ERRORS @ 16 MIN
 ;
 
-\ RS-DECODE-FRAME ( codeword_addr -- success_flag corrected_count )
+\ RS-DECODE-FRAME ( codeword_addr -- corrected_count success_flag )
 \ Full Reed-Solomon decoding pipeline: syndromes, Berlekamp, and correction.
-: RS-DECODE-FRAME ( codeword -- flag count )
+: RS-DECODE-FRAME ( codeword -- count flag )
     DUP RS-COMPUTE-SYNDROMES 0= IF
-        DROP 1 0 EXIT \ Clean frame: 0 errors
+        DROP 0 1 EXIT \ Clean frame: 0 errors
     THEN
 
     RS-BERLEKAMP
@@ -224,7 +229,7 @@ VARIABLE RS-NUM-ERRORS
     THEN
 
     \ Successfully decoded within error correction capability
-    1 SWAP
+    1
 ;
 
 \ RS-CODEC-INIT ( -- )
