@@ -51,25 +51,30 @@ VARIABLE FAULT-ACTIVE-SEVERITY
     SAFETY-INIT
 ;
 
+VARIABLE FLT-POST-CODE
+VARIABLE FLT-POST-SEV
+VARIABLE FLT-POST-ENTRY
+
 \ FAULT-POST ( fault_code severity -- )
 \ Record anomaly into circular log and trigger autonomous recovery if critical.
 : FAULT-POST ( code sev -- )
-    SWAP OVER >R >R \ Stash sev and code
-    FAULT-ACTIVE-SEVERITY @ R@ MAX FAULT-ACTIVE-SEVERITY !
+    FLT-POST-SEV !
+    FLT-POST-CODE !
+
+    FAULT-ACTIVE-SEVERITY @ FLT-POST-SEV @ MAX FAULT-ACTIVE-SEVERITY !
 
     \ Compute entry address in circular buffer
-    FAULT-LOG-HEAD @ FAULT-ENTRY-CELLS CELLS * FAULT-LOG-BUFFER + >R
+    FAULT-LOG-HEAD @ FAULT-ENTRY-CELLS CELLS * FAULT-LOG-BUFFER +
+    FLT-POST-ENTRY !
 
     \ Store timestamp
     HW-CLOCK
-    R@ 1 CELLS + !
-    R@ 0 CELLS + !
+    FLT-POST-ENTRY @ 1 CELLS + !
+    FLT-POST-ENTRY @ 0 CELLS + !
 
     \ Store code and severity
-    R> R> R> ROT
-    DUP R@ 2 CELLS + !
-    R@ 3 CELLS + !
-    DROP R> DROP
+    FLT-POST-CODE @ FLT-POST-ENTRY @ 2 CELLS + !
+    FLT-POST-SEV @ FLT-POST-ENTRY @ 3 CELLS + !
 
     \ Advance circular head index
     FAULT-LOG-HEAD @ 1+ FAULT-LOG-MAX-ENTRIES MOD FAULT-LOG-HEAD !
@@ -78,7 +83,7 @@ VARIABLE FAULT-ACTIVE-SEVERITY
     \ If severity is CRITICAL, initiate emergency safe-hold transition
     FAULT-ACTIVE-SEVERITY @ SEV-CRITICAL >= IF
         SAFETY-ASSERT-ESTOP
-        FAULT-LASER-OVERTEMP PAT-ENTER-SAFE-HOLD
+        FLT-POST-CODE @ PAT-ENTER-SAFE-HOLD
     THEN
 ;
 

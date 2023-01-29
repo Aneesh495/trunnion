@@ -37,6 +37,14 @@ VARIABLE HEATER-KD-Q16
 VARIABLE HEATER-INTEGRAL-Q16
 VARIABLE HEATER-PREV-ERROR-MK
 
+VARIABLE PID-MEAS
+VARIABLE PID-SETPOINT
+VARIABLE PID-DT
+VARIABLE PID-ERR
+VARIABLE PID-P
+VARIABLE PID-I
+VARIABLE PID-D
+
 \ HEATER-PID-INIT ( -- )
 : HEATER-PID-INIT ( -- )
     \ Kp = 2.0, Ki = 0.05, Kd = 5.0 in Q16.16
@@ -52,31 +60,36 @@ VARIABLE HEATER-PREV-ERROR-MK
 \ HEATER-PID-STEP ( measured_temp_mk setpoint_mk dt_sec -- pwm_percent )
 \ Compute closed-loop heater output (0 to 100 percent duty cycle).
 : HEATER-PID-STEP ( meas setpoint dt -- pwm )
-    >R
-    SWAP - \ Error = setpoint - measured (in mK)
-    DUP >R \ Stash error
+    PID-DT !
+    PID-SETPOINT !
+    PID-MEAS !
+
+    PID-SETPOINT @ PID-MEAS @ - PID-ERR !
 
     \ Proportional term: P = Kp * err
-    R@ S>Q16 HEATER-KP-Q16 @ Q16*
+    PID-ERR @ S>Q16 HEATER-KP-Q16 @ Q16* PID-P !
 
     \ Integral term: I = I + Ki * err * dt
-    R@ S>Q16 R@ S>Q16 Q16* HEATER-KI-Q16 @ Q16*
+    PID-ERR @ S>Q16 PID-DT @ S>Q16 Q16* HEATER-KI-Q16 @ Q16*
     HEATER-INTEGRAL-Q16 @ +
     \ Clamp integral anti-windup: [-50%, +50%]
     -3276800 3276800 CLAMP
-    DUP HEATER-INTEGRAL-Q16 ! +
+    DUP HEATER-INTEGRAL-Q16 ! PID-I !
 
     \ Derivative term: D = Kd * (err - prev_err) / dt
-    R@ HEATER-PREV-ERROR-MK @ - S>Q16
-    R> DROP \ Drop stashed error
-    R> S>Q16 Q16/
-    HEATER-KD-Q16 @ Q16* +
+    PID-DT @ 0> IF
+        PID-ERR @ HEATER-PREV-ERROR-MK @ - S>Q16
+        PID-DT @ S>Q16 Q16/
+        HEATER-KD-Q16 @ Q16* PID-D !
+    ELSE
+        0 PID-D !
+    THEN
 
     \ Store current error
-    R@ HEATER-PREV-ERROR-MK !
-    R> DROP
+    PID-ERR @ HEATER-PREV-ERROR-MK !
 
-    \ Convert Q16 to integer percent, clamped to [0, 100]
+    \ Sum: P + I + D
+    PID-P @ PID-I @ + PID-D @ +
     Q16>S 0 100 CLAMP
     DUP THERM-HEATER-PWM-PCT !
 ;

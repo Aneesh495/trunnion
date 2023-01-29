@@ -137,16 +137,16 @@ $0FFFF CONSTANT Q16-FRAC-MASK
 \ Q16>S ( q16 -- n )
 \ Convert Q16.16 fixed-point to truncated integer.
 : Q16>S ( q16 -- n )
-    Q16-SHIFT RSHIFT
+    Q16-SHIFT ARSHIFT
 ;
 
 \ Q16-ROUND ( q16 -- n )
 \ Convert Q16.16 fixed-point to rounded integer.
 : Q16-ROUND ( q16 -- n )
     DUP 0< IF
-        $8000 - Q16-SHIFT RSHIFT
+        $8000 - Q16-SHIFT ARSHIFT
     ELSE
-        $8000 + Q16-SHIFT RSHIFT
+        $8000 + Q16-SHIFT ARSHIFT
     THEN
 ;
 
@@ -173,7 +173,7 @@ $0FFFF CONSTANT Q16-FRAC-MASK
 \ Q16* ( a b -- a*b )
 \ Fast Q16.16 multiplication fitting within 64-bit cell without overflow.
 : Q16* ( a b -- a*b )
-    * Q16-SHIFT RSHIFT
+    * Q16-SHIFT ARSHIFT
 ;
 
 \ Q16/ ( a b -- a/b )
