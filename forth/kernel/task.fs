@@ -75,31 +75,32 @@ VARIABLE KERNEL-SCHED-TICKS
 \ Section 3: Cooperative Dispatcher
 \ ------------------------------------------------------------------------------
 
+VARIABLE TASK-CURR-TCB
+
 \ TASK-STEP ( -- )
 \ Advance round-robin scheduler by one millisecond tick.
 : TASK-STEP ( -- )
     1 KERNEL-SCHED-TICKS +!
 
     KERNEL-NUM-TASKS @ 0 DO
-        I TCB-ADDR >R
-        R@ 1 CELLS + @ TASK-STATE-READY = IF
+        I TCB-ADDR TASK-CURR-TCB !
+        TASK-CURR-TCB @ 1 CELLS + @ TASK-STATE-READY = IF
             \ Advance elapsed tick counter
-            1 R@ 4 CELLS + +!
+            1 TASK-CURR-TCB @ 4 CELLS + +!
 
             \ Check if task period elapsed
-            R@ 4 CELLS + @ R@ 3 CELLS + @ >= IF
-                0 R@ 4 CELLS + ! \ Reset elapsed counter
-                TASK-STATE-RUNNING R@ 1 CELLS + !
+            TASK-CURR-TCB @ 4 CELLS + @ TASK-CURR-TCB @ 3 CELLS + @ >= IF
+                0 TASK-CURR-TCB @ 4 CELLS + ! \ Reset elapsed counter
+                TASK-STATE-RUNNING TASK-CURR-TCB @ 1 CELLS + !
                 I KERNEL-CURR-TASK-ID !
 
                 \ Execute task body
-                R@ 2 CELLS + @ EXECUTE
+                TASK-CURR-TCB @ 2 CELLS + @ EXECUTE
 
-                1 R@ 5 CELLS + +!
-                TASK-STATE-READY R@ 1 CELLS + !
+                1 TASK-CURR-TCB @ 5 CELLS + +!
+                TASK-STATE-READY TASK-CURR-TCB @ 1 CELLS + !
             THEN
         THEN
-        R> DROP
     LOOP
 ;
 

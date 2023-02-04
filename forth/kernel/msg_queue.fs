@@ -35,6 +35,8 @@ VARIABLE MSG-Q-OVERFLOW-COUNT
     MSG-QUEUE-BUF MSG-QUEUE-MAX-ITEMS MSG-ITEM-CELLS CELLS * ERASE
 ;
 
+VARIABLE MSG-POST-ENTRY
+
 \ MSG-POST ( sender_id msg_type payload -- success_flag )
 \ Enqueue a message item into circular buffer.
 : MSG-POST ( sender type payload -- flag )
@@ -43,10 +45,10 @@ VARIABLE MSG-Q-OVERFLOW-COUNT
         0 EXIT
     THEN
 
-    MSG-Q-HEAD @ MSG-ITEM-CELLS CELLS * MSG-QUEUE-BUF + >R
-    R@ 2 CELLS + !
-    R@ 1 CELLS + !
-    R> 0 CELLS + !
+    MSG-Q-HEAD @ MSG-ITEM-CELLS CELLS * MSG-QUEUE-BUF + MSG-POST-ENTRY !
+    MSG-POST-ENTRY @ 2 CELLS + !
+    MSG-POST-ENTRY @ 1 CELLS + !
+    MSG-POST-ENTRY @ 0 CELLS + !
 
     MSG-Q-HEAD @ 1+ MSG-QUEUE-MAX-ITEMS MOD MSG-Q-HEAD !
     1 MSG-Q-COUNT +!
