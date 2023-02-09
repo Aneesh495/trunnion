@@ -69,7 +69,7 @@ trunnion_vm_t *trunnion_vm_create(void) {
     vm->sp = 0;
     vm->rp = 0;
     vm->fp = 0;
-    vm->here = 1024; /* Reserve bottom 1KB for system variables and boot structures */
+    vm->here = 4096; /* Reserve bottom 4KB for system variables, boot structures and transient buffers */
     vm->num_words = 0;
     vm->latest_word = -1;
     vm->base = 10;
@@ -1585,8 +1585,10 @@ bool trunnion_vm_eval_string(trunnion_vm_t *vm, const char *str) {
                 memcpy(vm->memory + str_dest, str_start, str_len);
                 vm->here = (vm->here + str_len + (sizeof(cell_t) - 1)) & ~(sizeof(cell_t) - 1);
             } else {
-                /* Copy string into PAD at offset 512 in Forth linear memory */
-                cell_t pad_offset = 512;
+                /* Copy string into transient rolling string buffer (7 slots of 512B in 512..4096) */
+                static int s_buf_idx = 0;
+                cell_t pad_offset = 512 + (s_buf_idx * 512);
+                s_buf_idx = (s_buf_idx + 1) % 7;
                 if (str_len < 500) {
                     memcpy(vm->memory + pad_offset, str_start, str_len);
                     vm->memory[pad_offset + str_len] = '\0';
