@@ -46,7 +46,7 @@ lines:
 
 test: $(TARGET) check
 	@echo "[Executing comprehensive Trunnion test runner...]"
-	@$(TARGET) tests/test_all.fs
+	@$(TARGET) trunnion.fs tests/test_all.fs
 
 repl: $(TARGET)
 	@$(TARGET) -i trunnion.fs
@@ -57,7 +57,7 @@ sim: $(TARGET)
 
 bench: $(TARGET)
 	@echo "[Running real-time jitter and control loop benchmarks...]"
-	@$(TARGET) tests/benchmarks.fs
+	@$(TARGET) trunnion.fs tests/benchmarks.fs
 
 clean:
 	@echo "[Cleaning build artifacts...]"

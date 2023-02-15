@@ -1689,7 +1689,23 @@ bool trunnion_vm_eval_string(trunnion_vm_t *vm, const char *str) {
 }
 
 bool trunnion_vm_load_file(trunnion_vm_t *vm, const char *filepath) {
-    FILE *fp = fopen(filepath, "r");
+    char resolved_path[1024];
+    strncpy(resolved_path, filepath, sizeof(resolved_path) - 1);
+    resolved_path[sizeof(resolved_path) - 1] = '\0';
+
+    FILE *fp = fopen(resolved_path, "r");
+    if (!fp && vm->current_file[0]) {
+        /* Try relative to directory of current including file */
+        char dir_buf[512];
+        strncpy(dir_buf, vm->current_file, sizeof(dir_buf) - 1);
+        dir_buf[sizeof(dir_buf) - 1] = '\0';
+        char *slash = strrchr(dir_buf, '/');
+        if (slash) {
+            *(slash + 1) = '\0';
+            snprintf(resolved_path, sizeof(resolved_path), "%s%s", dir_buf, filepath);
+            fp = fopen(resolved_path, "r");
+        }
+    }
     if (!fp) return false;
 
     char prev_file[256];
