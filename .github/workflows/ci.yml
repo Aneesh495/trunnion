@@ -1,0 +1,57 @@
+name: Trunnion CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-verify:
+    name: Build, Test & Benchmark
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Clang & Toolchain (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc gforth make python3 python3-pip
+
+      - name: Set up Toolchain (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install gforth || true
+
+      - name: Verify Zero Em-Dashes
+        run: |
+          python3 tools/check_no_em_dash.py
+
+      - name: Audit Code Metrics & Line Count
+        run: |
+          python3 tools/line_count.py
+
+      - name: Build Native C11 Forth VM
+        run: |
+          make clean
+          make all
+
+      - name: Execute Automated Verification Test Suites (C11 VM)
+        run: |
+          make test-vm
+
+      - name: Execute High-Rate Performance Benchmarks
+        run: |
+          make bench
+
+      - name: Execute GNU Forth Cross-Validation (if available)
+        continue-on-error: true
+        run: |
+          make test-gforth
