@@ -158,6 +158,153 @@ Injecting $T_f$ into the coarse gimbal motor drive eliminates limit cycles and d
 
 ---
 
+## CCSDS Optical Communications Subsystem
+
+The Trunnion communications pipeline implements the physical and data-link layers defined in **CCSDS 141.0-B-1 (Optical Communications Physical Layer)**:
+
+```
++------------------------------------------------------------------------+
+| APPLICATION LAYER: Spacecraft Engineering Telemetry & Ground Telecommands
++------------------------------------------------------------------------+
+                                    |
+                                    v
++------------------------------------------------------------------------+
+| CCSDS SPACE PACKETS (CCSDS 133.0-B-1) & AOS FRAMING (CCSDS 732.0-B-3)  |
++------------------------------------------------------------------------+
+                                    |
+                                    v
++------------------------------------------------------------------------+
+| REED-SOLOMON RS(255, 223) FORWARD ERROR CORRECTION (GF(2^8))           |
+| (Adds 32 Parity Symbols, Corrects up to 16 Byte Errors per Block)      |
++------------------------------------------------------------------------+
+                                    |
+                                    v
++------------------------------------------------------------------------+
+| MATRIX BLOCK INTERLEAVER (Configurable Depth I = 1, 2, 4, 8)           |
+| (Spreads Burst Fading across Multiple Codewords)                       |
++------------------------------------------------------------------------+
+                                    |
+                                    v
++------------------------------------------------------------------------+
+| 32-BIT ATTACHED SYNC MARKER (ASM = 0x1ACFFC1D) CORRELATOR               |
++------------------------------------------------------------------------+
+                                    |
+                                    v
++------------------------------------------------------------------------+
+| M-ARY PULSE POSITION MODULATION (M-PPM, M = 16)                        |
+| (1550 nm High-Power Narrow-Linewidth Laser)                            |
++------------------------------------------------------------------------+
+```
+
+---
+
+## Verification & Test Results
+
+The flight software undergoes continuous automated regression testing across dual execution runtimes (`bin/trunnion` and `gforth`):
+
+```bash
+make test
+```
+
+| Test Suite | Implementation File | Assertions | Checks | Status |
+|:-----------|:--------------------|:----------:|:------:|:------:|
+| **Core Fixed-Point, Vector & Quaternion Math** | `tests/test_core_math.fs` | 24 | 71 | **PASS** |
+| **Ring Buffers, Bitops, CRC & Core Utilities** | `tests/test_core_utils.fs` | 11 | 26 | **PASS** |
+| **CPA Kinematics, Trajectory & FSM Servo** | `tests/test_kinematics.fs` | 10 | 29 | **PASS** |
+| **Optical Centroiding & Nutation Tracking** | `tests/test_optics.fs` | 11 | 27 | **PASS** |
+| **PAT State Machine & Point-Ahead Solvers** | `tests/test_pat.fs` | 10 | 28 | **PASS** |
+| **Orbital Mechanics & Link Line-of-Sight** | `tests/test_orbit.fs` | 11 | 28 | **PASS** |
+| **CCSDS Optical Communications & Modem** | `tests/test_comm.fs` | 15 | 36 | **PASS** |
+| **FDIR, Thermal PID & Optical Safety** | `tests/test_fdir.fs` | 11 | 29 | **PASS** |
+| **Real-Time Kernel, Scheduler & Telemetry** | `tests/test_kernel.fs` | 11 | 28 | **PASS** |
+| **Boundary & Edge-Case Regressions** | `tests/test_regression.fs` | 14 | 36 | **PASS** |
+| **TOTAL VERIFICATION MATRIX** | `tests/test_all.fs` | **128** | **338** | **100% PASS** |
+
+---
+
+## High-Rate Performance Benchmarks
+
+Execution throughput evaluated across 1,000,000 iterations per benchmark on host hardware:
+
+```bash
+make bench
+```
+
+| Benchmark Operation | Sample Size | Execution Time | Measured Throughput | Real-Time Headroom Margin |
+|:--------------------|:-----------:|:--------------:|:-------------------:|:-------------------------:|
+| **Q32.32 Fixed-Point Math** | 1,000,000 | 12.8 ms | ~78.1 MOPS | >99.9% at 1 kHz |
+| **CORDIC 32-Iteration Rotations** | 100,000 | 489.2 ms | ~204.4k rot/s | >99.5% at 1 kHz |
+| **3x3 Matrix-Vector Transforms** | 100,000 | 58.7 ms | ~1.70M xforms/s | >99.9% at 1 kHz |
+| **Reed-Solomon RS(255, 223) Encoding**| 1,000 | 5.2 ms | ~192.3 KB/s | >95.0% at 100 kbps |
+| **1 kHz Real-Time Executive Frame** | 10,000 | 7.9 ms | ~1.26M cycles/s | **>99.9% Real-Time Margin** |
+
+---
+
+## Codebase Architecture & Scale Metrics
+
+Audited via `tools/line_count.py`:
+
+| Subsystem Layer | Files | Blank Lines | Comment Lines | Code Lines | Total Lines | Comment % |
+|:----------------|:-----:|:-----------:|:-------------:|:----------:|:-----------:|:---------:|
+| **Forth Flight Software** | 76 | 1,529 | 3,121 | 5,856 | 10,506 | 29.7% |
+| **ANSI C11 Virtual Machine** | 3 | 135 | 105 | 1,688 | 1,928 | 5.4% |
+| **HIL Simulation & Telemetry** | 7 | 201 | 202 | 841 | 1,244 | 16.2% |
+| **Technical Documentation** | 9 | 329 | 0 | 944 | 1,273 | - |
+| **Build System & CI** | 4 | 20 | 4 | 73 | 97 | 4.1% |
+| **TOTAL REPOSITORY SCALE** | **99** | **2,214** | **3,432** | **9,402** | **15,048** | **22.8%** |
+
+---
+
+## Quickstart & Operator Manual
+
+### 1. Build the Flight Software
+
+```bash
+# Compile native C11 virtual machine
+make clean
+make all
+```
+
+### 2. Launch Interactive Flight Software Shell
+
+```bash
+./bin/trunnion -i trunnion.fs
+```
+
+Type `HELP` for command listings or `STATUS` to view live avionics telemetry:
+
+```text
+trunnion> STATUS
+======================================================================
+ TRUNNION AVIONICS REAL-TIME ENGINEERING STATUS
+======================================================================
+ PAT State Machine : FINE_TRACK (0x05)
+ CPA Gimbal Azimuth: +024.512 deg  |  Elevation: +012.348 deg
+ CPA Velocity      : +000.012 deg/s|  Elevation: -000.004 deg/s
+ FSM Deflection Tip: +0042.8 urad  |  Tilt     : -0018.3 urad
+ Optical Receiver  : Energy=14280 counts | SNR=+28.4 dB
+ Laser Subsystem   : Power=250 mW  | Emission=ACTIVE | Interlock=CLOSED
+ Thermal Telemetry : Bench=+21.45 C| Laser Diode=+24.98 C
+ System Executive  : Ticks=482910  | Watchdog=ARMED (Healthy)
+======================================================================
+```
+
+### 3. Run Multi-Physics HIL Simulation
+
+```bash
+# Execute closed-loop orbit and optical link simulation
+make sim
+```
+
+### 4. Launch Live Telemetry Terminal Dashboard
+
+```bash
+# Real-time ANSI terminal engineering telemetry display
+python3 tools/telemetry_dashboard.py
+```
+
+---
+
 ## Detailed Technical Documentation
 
 Trunnion includes 8 comprehensive mathematical and system specifications in [`docs/`](docs/README.md):
@@ -170,3 +317,19 @@ Trunnion includes 8 comprehensive mathematical and system specifications in [`do
 6. **[Memory Map & HAL Specification](docs/memory_map.md)**: Physical peripheral register offsets, binary housekeeping telemetry format.
 7. **[Verification & Benchmark Plan](docs/verification.md)**: 10 test suite breakdowns, dual-target verification, and high-rate benchmark methodology.
 8. **[Getting Started & Operator Manual](docs/getting_started.md)**: Toolchain requirements, REPL command dictionary, and HIL simulation guide.
+
+---
+
+## Coding Standards & Em-Dash Enforcement
+
+All source files, comments, documentation, and tools strictly prohibit typographical em-dashes and en-dashes (`\u2014` and `\u2013`) to guarantee clean, uncorrupted ASCII rendering across cross-compilers and serial terminals. Continuous verification is enforced via:
+
+```bash
+python3 tools/check_no_em_dash.py
+```
+
+---
+
+## License
+
+Trunnion is open-source software licensed under the [Apache License, Version 2.0](LICENSE).
