@@ -6,10 +6,12 @@
  * Licensed under the ISC License.
  */
 
+#define _POSIX_C_SOURCE 200809L
 #include "trunnion_vm.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <ctype.h>
 #include <math.h>
 #include <time.h>
