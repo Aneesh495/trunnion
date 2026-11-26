@@ -48,6 +48,8 @@ test: $(TARGET) check
 	@echo "[Executing comprehensive Trunnion test runner...]"
 	@$(TARGET) trunnion.fs tests/test_all.fs
 
+test-vm: test
+
 repl: $(TARGET)
 	@$(TARGET) -i trunnion.fs
 
